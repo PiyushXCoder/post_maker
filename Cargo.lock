@@ -556,6 +556,7 @@ dependencies = [
  "fltk-theme",
  "image",
  "imageproc",
+ "lazy_static",
  "rusttype",
  "serde",
  "serde_json",

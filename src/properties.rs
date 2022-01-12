@@ -1,11 +1,22 @@
-use serde::{Deserialize, Serialize};
+use lazy_static::lazy_static;
+use rusttype::Font;
+use std::io::Read;
 
-#[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct Properties {
-    pub(crate) quote: String,
-    pub(crate) tag: String,
-    pub(crate) quote_position: u32,
-    pub(crate) tag_position: u32,
-    pub(crate) crop_position: (u32, u32),
-    pub(crate) rgba: [u8; 4],
+lazy_static! {
+    pub static ref FONT_QUOTE: Font<'static> = {
+        let mut buffer = Vec::new();
+        std::fs::File::open("ReenieBeanie-Regular.ttf")
+            .unwrap()
+            .read_to_end(&mut buffer)
+            .unwrap();
+        rusttype::Font::try_from_vec(buffer).unwrap()
+    };
+    pub static ref FONT_TAG: Font<'static> = {
+        let mut buffer = Vec::new();
+        std::fs::File::open("Kalam-Regular.ttf")
+            .unwrap()
+            .read_to_end(&mut buffer)
+            .unwrap();
+        rusttype::Font::try_from_vec(buffer).unwrap()
+    };
 }

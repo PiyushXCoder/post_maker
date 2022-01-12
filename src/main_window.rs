@@ -1,6 +1,7 @@
-use crate::utils::ImageContainer;
-use crate::{properties::Properties, utils};
+use crate::utils::ImageProperties;
+use crate::{draw_thread::*, properties};
 use fltk::{
+    app,
     button::Button,
     dialog::NativeFileChooser,
     draw as dr, enums,
@@ -13,40 +14,45 @@ use fltk::{
     prelude::*,
     window::Window,
 };
-use image::GenericImageView;
-use std::io::Read;
-use std::{cell::RefCell, ffi::OsStr, fs, path::Path, rc::Rc};
+use std::sync::{mpsc, RwLock};
+use std::{ffi::OsStr, fs, path::Path, sync::Arc};
 
 pub(crate) struct MainWindow {
     pub(crate) win: Window,
-    menubar: menu::SysMenuBar,
-    back_btn: Button,
-    next_btn: Button,
-    save_btn: Button,
-    file_choice: menu::Choice,
-    quote: MultilineInput,
-    tag: Input,
-    layer_red: Spinner,
-    layer_green: Spinner,
-    layer_blue: Spinner,
-    layer_alpha: Spinner,
-    quote_position: Spinner,
-    tag_position: Spinner,
-    crop_btn: Button,
-    reset_btn: Button,
-    page: Page,
-    container: Rc<RefCell<Option<ImageContainer>>>,
+    pub(crate) menubar: menu::SysMenuBar,
+    pub(crate) back_btn: Button,
+    pub(crate) next_btn: Button,
+    pub(crate) save_btn: Button,
+    pub(crate) file_choice: menu::Choice,
+    pub(crate) quote: MultilineInput,
+    pub(crate) tag: Input,
+    pub(crate) layer_red: Spinner,
+    pub(crate) layer_green: Spinner,
+    pub(crate) layer_blue: Spinner,
+    pub(crate) layer_alpha: Spinner,
+    pub(crate) quote_position: Spinner,
+    pub(crate) tag_position: Spinner,
+    pub(crate) crop_btn: Button,
+    pub(crate) reset_btn: Button,
+    pub(crate) status: Frame,
+    pub(crate) page: Page,
+    pub(crate) draw_buff: Arc<RwLock<Vec<u8>>>,
+    pub(crate) properties: Arc<RwLock<ImageProperties>>,
+    pub(crate) sender: mpsc::Sender<DrawMessage>,
 }
 
 #[derive(Clone)]
 pub(crate) struct Page {
-    image: Frame,
-    row_flex: Flex,
-    col_flex: Flex,
+    pub(crate) image: Frame,
+    pub(crate) row_flex: Flex,
+    pub(crate) col_flex: Flex,
 }
 
 impl MainWindow {
-    pub(crate) fn new(container: Rc<RefCell<Option<ImageContainer>>>) -> Self {
+    pub(crate) fn new(
+        sender: app::Sender<crate::AppMessage>,
+        draw_buff: Arc<RwLock<Vec<u8>>>,
+    ) -> Self {
         let color = [25, 29, 34, 190];
 
         let mut win = Window::default()
@@ -144,6 +150,11 @@ impl MainWindow {
         actions_flex.end();
         controls_flex.set_size(&actions_flex, 30);
 
+        Frame::default();
+
+        let status = Frame::default();
+        controls_flex.set_size(&status, 30);
+
         controls_flex.end();
         workspace_flex.set_size(&controls_flex, 360);
 
@@ -167,6 +178,8 @@ impl MainWindow {
         win.make_resizable(true);
         win.show();
 
+        let properties = Arc::new(RwLock::new(ImageProperties::new()));
+        let (rx, tx) = std::sync::mpsc::channel();
         let mut main_win = Self {
             win,
             menubar,
@@ -184,13 +197,17 @@ impl MainWindow {
             tag_position,
             crop_btn,
             reset_btn,
-            container,
+            status,
+            draw_buff,
+            properties: Arc::clone(&properties),
             page: Page {
                 image: img_view,
                 row_flex: center_row_flex,
                 col_flex: center_col_flex,
             },
+            sender: rx,
         };
+        spawn_image_thread(tx, sender, Arc::clone(&properties), &main_win);
         main_win.menu();
         main_win.draw();
         main_win.events();
@@ -199,27 +216,30 @@ impl MainWindow {
 
     fn menu(&mut self) {
         let mut file_choice = self.file_choice.clone();
-        let mut quote = self.quote.clone();
-        let mut tag = self.tag.clone();
-        let mut layer_red = self.layer_red.clone();
-        let mut layer_green = self.layer_green.clone();
-        let mut layer_blue = self.layer_blue.clone();
-        let mut layer_alpha = self.layer_alpha.clone();
-        let mut quote_position = self.quote_position.clone();
-        let mut tag_position = self.tag_position.clone();
-        let mut page = self.page.clone();
-        let container = Rc::clone(&self.container);
+        // let mut quote = self.quote.clone();
+        // let mut tag = self.tag.clone();
+        // let mut layer_red = self.layer_red.clone();
+        // let mut layer_green = self.layer_green.clone();
+        // let mut layer_blue = self.layer_blue.clone();
+        // let mut layer_alpha = self.layer_alpha.clone();
+        // let mut quote_position = self.quote_position.clone();
+        // let mut tag_position = self.tag_position.clone();
+        // let mut page = self.page.clone();
+        let sender = self.sender.clone();
+        // let properties = Arc::clone(&self.properties);
         let mut win = self.win.clone();
         self.menubar.add(
             "&File/Open Folder...\t",
             Shortcut::Ctrl | 'o',
             menu::MenuFlag::Normal,
             move |_| {
+                win.redraw();
                 let mut chooser = NativeFileChooser::new(fltk::dialog::FileDialogType::BrowseDir);
                 chooser.set_option(fltk::dialog::FileDialogOptions::NewFolder);
                 chooser.show();
                 let path = chooser.filename();
                 if !path.exists() {
+                    win.activate();
                     return;
                 }
                 let files = fs::read_dir(path).unwrap();
@@ -232,26 +252,13 @@ impl MainWindow {
                     }
                 }
                 if text.len() == 0 {
+                    win.activate();
                     return;
                 }
                 file_choice.clear();
                 file_choice.add_choice(&text[1..]);
                 file_choice.set_value(0);
-
-                load_image(
-                    &mut file_choice,
-                    &mut quote,
-                    &mut tag,
-                    &mut layer_red,
-                    &mut layer_green,
-                    &mut layer_blue,
-                    &mut layer_alpha,
-                    &mut quote_position,
-                    &mut tag_position,
-                    &mut page,
-                    &container,
-                );
-                win.redraw();
+                sender.send(DrawMessage::Open).unwrap();
             },
         );
 
@@ -273,130 +280,193 @@ impl MainWindow {
     }
 
     fn draw(&mut self) {
-        let mut buffer = Vec::new();
-        fs::File::open("ReenieBeanie-Regular.ttf")
-            .unwrap()
-            .read_to_end(&mut buffer)
-            .unwrap();
-        let font = rusttype::Font::try_from_vec(buffer).unwrap();
-
-        let container = Rc::clone(&self.container);
-        let quote = self.quote.clone();
+        println!("in draw");
+        let buff = Arc::clone(&self.draw_buff);
+        let properties = Arc::clone(&self.properties);
         self.page.image.draw(move |f| {
-            if let Some(cont) = &*container.borrow() {
-                let image = cont.image.as_rgb8().unwrap();
-                dr::draw_image(
-                    image.as_raw(),
-                    f.x(),
-                    f.y(),
-                    image.width() as i32,
-                    image.height() as i32,
-                    enums::ColorDepth::Rgb8,
-                )
-                .unwrap();
-
-                dr::set_color_rgb(255, 255, 255);
-
-                let size = utils::quote_from_height(image.height());
-                dr::set_font(enums::Font::Times, size as i32);
-
-                let (text_width, text_height) = utils::measure_line(
-                    &font,
-                    &quote.value(),
-                    rusttype::Scale::uniform(size as f32),
-                );
-
-                dr::draw_text(
-                    &quote.value(),
-                    f.x() + image.width() as i32 / 2 - text_width as i32 / 2,
-                    f.y() + image.height() as i32 / 2 - text_height as i32 / 2,
-                );
-            }
+            let (width, height) = properties.read().unwrap().dimension;
+            let image = &*buff.read().unwrap();
+            dr::draw_image(
+                &image,
+                f.x(),
+                f.y(),
+                width as i32,
+                height as i32,
+                enums::ColorDepth::Rgb8,
+            )
+            .unwrap();
         })
     }
 
     fn events(&mut self) {
         let mut image = self.page.image.clone();
-        self.quote.handle(move |_, ev| {
+        let properties = Arc::clone(&self.properties);
+        let sender = self.sender.clone();
+        self.quote.handle(move |f, ev| {
             if ev == enums::Event::KeyUp {
+                let mut prop = properties.write().unwrap();
+                prop.quote = f.value();
+                sender.send(DrawMessage::Recalc).unwrap();
+                sender.send(DrawMessage::Flush).unwrap();
                 image.redraw();
             }
             true
         });
-    }
-}
 
-fn load_image(
-    file_choice: &mut menu::Choice,
-    quote: &mut MultilineInput,
-    tag: &mut Input,
-    layer_red: &mut Spinner,
-    layer_green: &mut Spinner,
-    layer_blue: &mut Spinner,
-    layer_alpha: &mut Spinner,
-    quote_position: &mut Spinner,
-    tag_position: &mut Spinner,
-    page: &mut Page,
-    container: &Rc<RefCell<Option<ImageContainer>>>,
-) {
-    let file: String = match file_choice.choice() {
-        Some(val) => val,
-        None => return,
-    };
-
-    *container.borrow_mut() = Some(ImageContainer::new(&file));
-
-    let file = Path::new(&file);
-    let conf = file.with_extension("conf");
-
-    let mut use_defaults = true;
-    if conf.exists() {
-        let read = fs::read_to_string(&conf).unwrap();
-        if let Ok(prop) = serde_json::from_str::<Properties>(&read) {
-            if let Some(cont) = &mut *container.borrow_mut() {
-                layer_red.set_value(prop.rgba[0] as f64);
-                layer_green.set_value(prop.rgba[1] as f64);
-                layer_blue.set_value(prop.rgba[2] as f64);
-                layer_alpha.set_value(prop.rgba[3] as f64);
-                quote.set_value(&prop.quote);
-                tag.set_value(&prop.tag);
-                quote_position.set_value(prop.quote_position as f64);
-                tag_position.set_value(prop.tag_position as f64);
-                cont.apply_crop_pos(prop.crop_position.0, prop.crop_position.1);
-
-                cont.quote = prop.quote;
-                cont.tag = prop.tag;
-                cont.quote_position = prop.quote_position;
-                cont.tag_position = prop.quote_position;
-                cont.rgba = prop.rgba;
+        let mut image = self.page.image.clone();
+        let properties = Arc::clone(&self.properties);
+        let sender = self.sender.clone();
+        self.tag.handle(move |f, ev| {
+            if ev == enums::Event::KeyUp {
+                let mut prop = properties.write().unwrap();
+                prop.tag = f.value();
+                sender.send(DrawMessage::Recalc).unwrap();
+                sender.send(DrawMessage::Flush).unwrap();
+                image.redraw();
             }
-            use_defaults = false;
-        }
-    }
+            true
+        });
 
-    if use_defaults {
-        if let Some(cont) = &mut *container.borrow_mut() {
-            quote.set_value("");
-            tag.set_value("");
-            quote_position.set_value(cont.quote_position as f64);
-            tag_position.set_value(cont.tag_position as f64);
-            cont.apply_crop();
+        let mut image = self.page.image.clone();
+        let properties = Arc::clone(&self.properties);
+        let sender = self.sender.clone();
+        self.quote_position.set_callback(move |f| {
+            let mut prop = properties.write().unwrap();
+            prop.quote_position = f.value() as u32;
+            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::Flush).unwrap();
+            image.redraw();
+        });
 
-            cont.rgba = [
-                layer_red.value() as u8,
-                layer_green.value() as u8,
-                layer_blue.value() as u8,
-                layer_alpha.value() as u8,
-            ];
-        }
-    }
+        let mut image = self.page.image.clone();
+        let properties = Arc::clone(&self.properties);
+        let sender = self.sender.clone();
+        self.tag_position.set_callback(move |f| {
+            let mut prop = properties.write().unwrap();
+            prop.tag_position = f.value() as u32;
+            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::Flush).unwrap();
+            image.redraw();
+        });
 
-    if let Some(cont) = &mut *container.borrow_mut() {
-        cont.apply_layer();
-        let (width, height) = cont.image.dimensions();
-        page.row_flex.set_size(&page.col_flex, width as i32);
-        page.col_flex.set_size(&page.image, height as i32);
-        page.row_flex.recalc();
-        page.col_flex.recalc();
+        let mut image = self.page.image.clone();
+        let properties = Arc::clone(&self.properties);
+        let sender = self.sender.clone();
+        self.layer_red.set_callback(move |f| {
+            let mut prop = properties.write().unwrap();
+            prop.rgba[0] = f.value() as u8;
+            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::Flush).unwrap();
+            image.redraw();
+        });
+
+        let mut image = self.page.image.clone();
+        let properties = Arc::clone(&self.properties);
+        let sender = self.sender.clone();
+        self.layer_green.set_callback(move |f| {
+            let mut prop = properties.write().unwrap();
+            prop.rgba[1] = f.value() as u8;
+            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::Flush).unwrap();
+            image.redraw();
+        });
+
+        let mut image = self.page.image.clone();
+        let properties = Arc::clone(&self.properties);
+        let sender = self.sender.clone();
+        self.layer_blue.set_callback(move |f| {
+            let mut prop = properties.write().unwrap();
+            prop.rgba[2] = f.value() as u8;
+            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::Flush).unwrap();
+            image.redraw();
+        });
+
+        let mut image = self.page.image.clone();
+        let properties = Arc::clone(&self.properties);
+        let sender = self.sender.clone();
+        self.layer_alpha.set_callback(move |f| {
+            let mut prop = properties.write().unwrap();
+            prop.rgba[3] = f.value() as u8;
+            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::Flush).unwrap();
+            image.redraw();
+        });
     }
 }
+
+// fn load_image(
+//     file_choice: &mut menu::Choice,
+//     quote: &mut MultilineInput,
+//     tag: &mut Input,
+//     layer_red: &mut Spinner,
+//     layer_green: &mut Spinner,
+//     layer_blue: &mut Spinner,
+//     layer_alpha: &mut Spinner,
+//     quote_position: &mut Spinner,
+//     tag_position: &mut Spinner,
+//     page: &mut Page,
+//     properties: &Arc<RwLock<ImageProperties>>,
+//     sender: &mpsc::Sender<DrawMessage>,
+// ) {
+//     let file: String = match file_choice.choice() {
+//         Some(val) => val,
+//         None => return,
+//     };
+
+//     sender.send(DrawMessage::Open(file.clone())).unwrap();
+
+//     let file = Path::new(&file);
+//     let conf = file.with_extension("conf");
+
+//     let mut prop = properties.write().unwrap();
+//     let mut use_defaults = true;
+//     if conf.exists() {
+//         let read = fs::read_to_string(&conf).unwrap();
+//         if let Ok(saved_prop) = serde_json::from_str::<ImageProperties>(&read) {
+//             layer_red.set_value(saved_prop.rgba[0] as f64);
+//             layer_green.set_value(saved_prop.rgba[1] as f64);
+//             layer_blue.set_value(saved_prop.rgba[2] as f64);
+//             layer_alpha.set_value(saved_prop.rgba[3] as f64);
+//             quote.set_value(&saved_prop.quote);
+//             tag.set_value(&saved_prop.tag);
+//             quote_position.set_range(0.0, prop.original_dimension.1 as f64);
+//             quote_position.set_value(saved_prop.quote_position as f64);
+//             tag_position.set_range(0.0, prop.original_dimension.1 as f64);
+//             tag_position.set_value(saved_prop.tag_position as f64);
+
+//             if let Some((x, y)) = saved_prop.crop_position {
+//                 sender.send(DrawMessage::CropPos(x, y)).unwrap();
+//             }
+
+//             prop.quote = saved_prop.quote;
+//             prop.tag = saved_prop.tag;
+//             prop.quote_position = saved_prop.quote_position;
+//             prop.tag_position = saved_prop.quote_position;
+//             prop.rgba = saved_prop.rgba;
+//             use_defaults = false;
+//         }
+//     }
+
+//     if use_defaults {
+//         quote.set_value("");
+//         tag.set_value("");
+
+//         quote_position.set_range(0.0, prop.original_dimension.1 as f64);
+//         quote_position.set_value(prop.quote_position as f64);
+//         tag_position.set_range(0.0, prop.original_dimension.1 as f64);
+//         tag_position.set_value(prop.tag_position as f64);
+
+//         sender.send(DrawMessage::Crop).unwrap();
+
+//         prop.rgba = [
+//             layer_red.value() as u8,
+//             layer_green.value() as u8,
+//             layer_blue.value() as u8,
+//             layer_alpha.value() as u8,
+//         ];
+//     }
+//     sender.send(DrawMessage::Recalc).unwrap();
+//     println!("sent");
+//     sender.send(DrawMessage::Flush).unwrap();
+// }
