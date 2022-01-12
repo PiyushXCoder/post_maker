@@ -280,7 +280,6 @@ impl MainWindow {
     }
 
     fn draw(&mut self) {
-        println!("in draw");
         let buff = Arc::clone(&self.draw_buff);
         let properties = Arc::clone(&self.properties);
         self.page.image.draw(move |f| {
@@ -299,6 +298,33 @@ impl MainWindow {
     }
 
     fn events(&mut self) {
+        let mut file_choice = self.file_choice.clone();
+        let sender = self.sender.clone();
+        self.next_btn.set_callback(move |_| {
+            if file_choice.value() == file_choice.size() - 2 {
+                file_choice.set_value(0);
+            } else {
+                file_choice.set_value(file_choice.value() + 1);
+            }
+            sender.send(DrawMessage::Open).unwrap();
+        });
+
+        let mut file_choice = self.file_choice.clone();
+        let sender = self.sender.clone();
+        self.back_btn.set_callback(move |_| {
+            if file_choice.value() == 0 {
+                file_choice.set_value(file_choice.size() - 2);
+            } else {
+                file_choice.set_value(file_choice.value() - 1);
+            }
+            sender.send(DrawMessage::Open).unwrap();
+        });
+
+        let sender = self.sender.clone();
+        self.file_choice.set_callback(move |_| {
+            sender.send(DrawMessage::Open).unwrap();
+        });
+
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
@@ -394,79 +420,3 @@ impl MainWindow {
         });
     }
 }
-
-// fn load_image(
-//     file_choice: &mut menu::Choice,
-//     quote: &mut MultilineInput,
-//     tag: &mut Input,
-//     layer_red: &mut Spinner,
-//     layer_green: &mut Spinner,
-//     layer_blue: &mut Spinner,
-//     layer_alpha: &mut Spinner,
-//     quote_position: &mut Spinner,
-//     tag_position: &mut Spinner,
-//     page: &mut Page,
-//     properties: &Arc<RwLock<ImageProperties>>,
-//     sender: &mpsc::Sender<DrawMessage>,
-// ) {
-//     let file: String = match file_choice.choice() {
-//         Some(val) => val,
-//         None => return,
-//     };
-
-//     sender.send(DrawMessage::Open(file.clone())).unwrap();
-
-//     let file = Path::new(&file);
-//     let conf = file.with_extension("conf");
-
-//     let mut prop = properties.write().unwrap();
-//     let mut use_defaults = true;
-//     if conf.exists() {
-//         let read = fs::read_to_string(&conf).unwrap();
-//         if let Ok(saved_prop) = serde_json::from_str::<ImageProperties>(&read) {
-//             layer_red.set_value(saved_prop.rgba[0] as f64);
-//             layer_green.set_value(saved_prop.rgba[1] as f64);
-//             layer_blue.set_value(saved_prop.rgba[2] as f64);
-//             layer_alpha.set_value(saved_prop.rgba[3] as f64);
-//             quote.set_value(&saved_prop.quote);
-//             tag.set_value(&saved_prop.tag);
-//             quote_position.set_range(0.0, prop.original_dimension.1 as f64);
-//             quote_position.set_value(saved_prop.quote_position as f64);
-//             tag_position.set_range(0.0, prop.original_dimension.1 as f64);
-//             tag_position.set_value(saved_prop.tag_position as f64);
-
-//             if let Some((x, y)) = saved_prop.crop_position {
-//                 sender.send(DrawMessage::CropPos(x, y)).unwrap();
-//             }
-
-//             prop.quote = saved_prop.quote;
-//             prop.tag = saved_prop.tag;
-//             prop.quote_position = saved_prop.quote_position;
-//             prop.tag_position = saved_prop.quote_position;
-//             prop.rgba = saved_prop.rgba;
-//             use_defaults = false;
-//         }
-//     }
-
-//     if use_defaults {
-//         quote.set_value("");
-//         tag.set_value("");
-
-//         quote_position.set_range(0.0, prop.original_dimension.1 as f64);
-//         quote_position.set_value(prop.quote_position as f64);
-//         tag_position.set_range(0.0, prop.original_dimension.1 as f64);
-//         tag_position.set_value(prop.tag_position as f64);
-
-//         sender.send(DrawMessage::Crop).unwrap();
-
-//         prop.rgba = [
-//             layer_red.value() as u8,
-//             layer_green.value() as u8,
-//             layer_blue.value() as u8,
-//             layer_alpha.value() as u8,
-//         ];
-//     }
-//     sender.send(DrawMessage::Recalc).unwrap();
-//     println!("sent");
-//     sender.send(DrawMessage::Flush).unwrap();
-// }

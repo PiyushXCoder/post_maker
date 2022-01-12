@@ -41,44 +41,38 @@ pub(crate) fn spawn_image_thread(
     let mut quote_position = main_win.quote_position.clone();
     let mut tag_position = main_win.tag_position.clone();
     let mut page = main_win.page.clone();
+    let mut status = main_win.status.clone();
 
     let mut _container: Option<ImageContainer> = None;
     std::thread::spawn(move || loop {
         if let Ok(val) = reciver.recv() {
             match val {
-                DrawMessage::Open => load_image(
-                    &mut file_choice,
-                    &mut quote,
-                    &mut tag,
-                    &mut layer_red,
-                    &mut layer_green,
-                    &mut layer_blue,
-                    &mut layer_alpha,
-                    &mut quote_position,
-                    &mut tag_position,
-                    &mut page,
-                    &app_sender,
-                    &properties,
-                    &mut _container,
-                ),
+                DrawMessage::Open => {
+                    status.set_label("Loading...");
+                    load_image(
+                        &mut file_choice,
+                        &mut quote,
+                        &mut tag,
+                        &mut layer_red,
+                        &mut layer_green,
+                        &mut layer_blue,
+                        &mut layer_alpha,
+                        &mut quote_position,
+                        &mut tag_position,
+                        &mut page,
+                        &app_sender,
+                        &properties,
+                        &mut _container,
+                    );
+                    status.set_label("");
+                }
                 DrawMessage::Recalc => {
                     if let Some(cont) = &mut _container {
                         cont.recalc();
                     }
                 }
-                // DrawMessage::CropPos(x, y) => {
-                //     if let Some(cont) = &mut _container {
-                //         cont.apply_crop_pos(x, y);
-                //     }
-                // }
-                // DrawMessage::Crop => {
-                //     if let Some(cont) = &mut _container {
-                //         cont.apply_crop();
-                //     }
-                // }
                 DrawMessage::Flush => {
                     flush_buffer(&app_sender, &mut _container);
-                    println!("recived");
                 }
             }
         }
@@ -108,6 +102,9 @@ fn load_image(
     *container = Some(ImageContainer::new(&file, Arc::clone(properties)));
 
     if let Some(cont) = container {
+        quote.set_value("");
+        tag.set_value("");
+
         let file = Path::new(&file);
         let conf = file.with_extension("conf");
 
@@ -144,8 +141,8 @@ fn load_image(
 
         if use_defaults {
             let mut prop = properties.write().unwrap();
-            quote.set_value("");
-            tag.set_value("");
+            prop.quote = "".to_owned();
+            prop.tag = "".to_owned();
 
             quote_position.set_range(0.0, prop.original_dimension.1 as f64);
             quote_position.set_value(prop.quote_position as f64);
@@ -162,6 +159,7 @@ fn load_image(
             cont.apply_crop();
         }
 
+        cont.apply_scale();
         let prop = properties.read().unwrap();
         let (width, height) = prop.dimension;
         page.col_flex.set_size(&page.image, height as i32);

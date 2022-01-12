@@ -16,12 +16,9 @@ impl ImageContainer {
     pub(crate) fn new(path: &str, properties: Arc<RwLock<ImageProperties>>) -> Self {
         let img = image::open(path).unwrap();
         let (width, height) = img.dimensions();
-        let (s_width, s_height) = ((width * 500) / height, 500);
-        let img = img.resize(s_width, s_height, image::imageops::FilterType::Triangle);
 
         let mut prop = properties.write().unwrap();
         prop.path = path.to_owned();
-        prop.dimension = (s_width, s_height);
         prop.original_dimension = (width, height);
         prop.quote_position = height / 2;
         prop.tag_position = (height * 2) / 3;
@@ -31,6 +28,19 @@ impl ImageContainer {
             buffer: img,
             properties: Arc::clone(&properties),
         }
+    }
+
+    pub(crate) fn apply_scale(&mut self) {
+        let mut prop = self.properties.write().unwrap();
+        let (width, height) = prop.dimension;
+        let (s_width, s_height) = ((width * 500) / height, 500);
+        self.image =
+            self.image
+                .resize_exact(s_width, s_height, image::imageops::FilterType::Nearest);
+
+        self.buffer = self.image.clone();
+
+        prop.dimension = (s_width, s_height);
     }
 
     pub(crate) fn apply_crop(&mut self) {

@@ -46,7 +46,6 @@ fn main() {
                 AppMessage::RedrawMainWindowImage(data) => {
                     let mut buff = draw_buff.write().unwrap();
                     *buff = data;
-                    println!("copy buff");
                     main_window.win.redraw();
                 }
             }
