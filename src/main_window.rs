@@ -1,5 +1,6 @@
+use crate::crop_window::CropWindow;
+use crate::draw_thread::*;
 use crate::utils::ImageProperties;
-use crate::{draw_thread::*, properties};
 use fltk::{
     app,
     button::Button,
@@ -15,7 +16,7 @@ use fltk::{
     window::Window,
 };
 use std::sync::{mpsc, RwLock};
-use std::{ffi::OsStr, fs, path::Path, sync::Arc};
+use std::{ffi::OsStr, fs, sync::Arc};
 
 pub(crate) struct MainWindow {
     pub(crate) win: Window,
@@ -33,7 +34,6 @@ pub(crate) struct MainWindow {
     pub(crate) quote_position: Spinner,
     pub(crate) tag_position: Spinner,
     pub(crate) crop_btn: Button,
-    pub(crate) reset_btn: Button,
     pub(crate) status: Frame,
     pub(crate) page: Page,
     pub(crate) draw_buff: Arc<RwLock<Vec<u8>>>,
@@ -55,9 +55,7 @@ impl MainWindow {
     ) -> Self {
         let color = [25, 29, 34, 190];
 
-        let mut win = Window::default()
-            .with_size(1000, 600)
-            .with_label("Post Maker");
+        let mut win = Window::new(0, 0, 1000, 600, "Post Maker").center_screen();
 
         let mut main_flex = Flex::default().size_of_parent().column();
         let menubar = menu::SysMenuBar::default();
@@ -144,8 +142,6 @@ impl MainWindow {
         Frame::default();
         let crop_btn = Button::default().with_label("Crop");
         actions_flex.set_size(&crop_btn, 100);
-        let reset_btn = Button::default().with_label("Reset Values");
-        actions_flex.set_size(&reset_btn, 100);
         Frame::default();
         actions_flex.end();
         controls_flex.set_size(&actions_flex, 30);
@@ -196,7 +192,6 @@ impl MainWindow {
             quote_position,
             tag_position,
             crop_btn,
-            reset_btn,
             status,
             draw_buff,
             properties: Arc::clone(&properties),
@@ -216,17 +211,7 @@ impl MainWindow {
 
     fn menu(&mut self) {
         let mut file_choice = self.file_choice.clone();
-        // let mut quote = self.quote.clone();
-        // let mut tag = self.tag.clone();
-        // let mut layer_red = self.layer_red.clone();
-        // let mut layer_green = self.layer_green.clone();
-        // let mut layer_blue = self.layer_blue.clone();
-        // let mut layer_alpha = self.layer_alpha.clone();
-        // let mut quote_position = self.quote_position.clone();
-        // let mut tag_position = self.tag_position.clone();
-        // let mut page = self.page.clone();
         let sender = self.sender.clone();
-        // let properties = Arc::clone(&self.properties);
         let mut win = self.win.clone();
         self.menubar.add(
             "&File/Open Folder...\t",
@@ -242,7 +227,14 @@ impl MainWindow {
                     win.activate();
                     return;
                 }
-                let files = fs::read_dir(path).unwrap();
+                let expost_dir = path.join("export");
+                if !expost_dir.exists() {
+                    if let Err(_) = fs::create_dir(expost_dir) {
+                        fltk::dialog::message_default("Failed: Readonly folder!");
+                        return;
+                    }
+                }
+                let files = fs::read_dir(&path).unwrap();
                 let mut text = String::new();
                 for file in files {
                     let file = file.unwrap();
@@ -298,6 +290,18 @@ impl MainWindow {
     }
 
     fn events(&mut self) {
+        let properties = Arc::clone(&self.properties);
+        let mut crop_win = CropWindow::new();
+        let sender = self.sender.clone();
+        self.crop_btn.set_callback(move |_| {
+            let prop = properties.read().unwrap();
+            if let Some(path) = &prop.path {
+                if let Some((x, y)) = crop_win.load_to_crop(path, prop.crop_position) {
+                    sender.send(DrawMessage::ChangeCrop((x, y))).unwrap();
+                }
+            }
+        });
+
         let mut file_choice = self.file_choice.clone();
         let sender = self.sender.clone();
         self.next_btn.set_callback(move |_| {
@@ -358,7 +362,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         self.quote_position.set_callback(move |f| {
             let mut prop = properties.write().unwrap();
-            prop.quote_position = f.value() as u32;
+            prop.quote_position = f.value();
             sender.send(DrawMessage::Recalc).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
@@ -369,7 +373,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         self.tag_position.set_callback(move |f| {
             let mut prop = properties.write().unwrap();
-            prop.tag_position = f.value() as u32;
+            prop.tag_position = f.value();
             sender.send(DrawMessage::Recalc).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();

@@ -1,5 +1,5 @@
 mod config;
-// mod crop_window;
+mod crop_window;
 mod draw_thread;
 mod main_window;
 mod properties;

@@ -1,3 +1,5 @@
+//! Thread to manage drawing in background
+
 use crate::{
     main_window::{MainWindow, Page},
     AppMessage,
@@ -20,7 +22,8 @@ use crate::utils::{ImageContainer, ImageProperties};
 
 #[derive(Debug, Clone)]
 pub(crate) enum DrawMessage {
-    Open,
+    Open, // Open file or cropped file
+    ChangeCrop((f64, f64)),
     Recalc,
     Flush,
 }
@@ -51,6 +54,27 @@ pub(crate) fn spawn_image_thread(
                     status.set_label("Loading...");
                     load_image(
                         &mut file_choice,
+                        None,
+                        &mut quote,
+                        &mut tag,
+                        &mut layer_red,
+                        &mut layer_green,
+                        &mut layer_blue,
+                        &mut layer_alpha,
+                        &mut quote_position,
+                        &mut tag_position,
+                        &mut page,
+                        &app_sender,
+                        &properties,
+                        &mut _container,
+                    );
+                    status.set_label("");
+                }
+                DrawMessage::ChangeCrop((x, y)) => {
+                    status.set_label("Loading...");
+                    load_image(
+                        &mut file_choice,
+                        Some((x, y)),
                         &mut quote,
                         &mut tag,
                         &mut layer_red,
@@ -81,6 +105,7 @@ pub(crate) fn spawn_image_thread(
 
 fn load_image(
     file_choice: &mut menu::Choice,
+    crop: Option<(f64, f64)>,
     quote: &mut MultilineInput,
     tag: &mut Input,
     layer_red: &mut Spinner,
@@ -103,7 +128,6 @@ fn load_image(
 
     if let Some(cont) = container {
         quote.set_value("");
-        tag.set_value("");
 
         let file = Path::new(&file);
         let conf = file.with_extension("conf");
@@ -111,19 +135,19 @@ fn load_image(
         let properties = Arc::clone(&cont.properties);
         let mut use_defaults = true;
         if conf.exists() {
+            let mut prop = properties.write().unwrap();
             let read = fs::read_to_string(&conf).unwrap();
             if let Ok(saved_prop) = serde_json::from_str::<ImageProperties>(&read) {
-                let mut prop = properties.write().unwrap();
                 layer_red.set_value(saved_prop.rgba[0] as f64);
                 layer_green.set_value(saved_prop.rgba[1] as f64);
                 layer_blue.set_value(saved_prop.rgba[2] as f64);
                 layer_alpha.set_value(saved_prop.rgba[3] as f64);
                 quote.set_value(&saved_prop.quote);
                 tag.set_value(&saved_prop.tag);
-                quote_position.set_range(0.0, prop.original_dimension.1 as f64);
-                quote_position.set_value(saved_prop.quote_position as f64);
-                tag_position.set_range(0.0, prop.original_dimension.1 as f64);
-                tag_position.set_value(saved_prop.tag_position as f64);
+                quote_position.set_range(0.0, prop.original_dimension.1);
+                quote_position.set_value(saved_prop.quote_position);
+                tag_position.set_range(0.0, prop.original_dimension.1);
+                tag_position.set_value(saved_prop.tag_position);
 
                 prop.quote = saved_prop.quote;
                 prop.tag = saved_prop.tag;
@@ -131,10 +155,17 @@ fn load_image(
                 prop.tag_position = saved_prop.quote_position;
                 prop.rgba = saved_prop.rgba;
                 use_defaults = false;
-
+                let saved = prop.is_saved;
                 drop(prop);
-                if let Some((x, y)) = saved_prop.crop_position {
-                    cont.apply_crop_pos(x, y);
+                if saved {
+                    if let Some((x, y)) = saved_prop.crop_position {
+                        cont.apply_crop_pos(x, y);
+                    }
+                } else {
+                    match crop {
+                        Some((x, y)) => cont.apply_crop_pos(x, y),
+                        None => cont.apply_crop(),
+                    }
                 }
             }
         }
@@ -142,12 +173,11 @@ fn load_image(
         if use_defaults {
             let mut prop = properties.write().unwrap();
             prop.quote = "".to_owned();
-            prop.tag = "".to_owned();
 
-            quote_position.set_range(0.0, prop.original_dimension.1 as f64);
-            quote_position.set_value(prop.quote_position as f64);
-            tag_position.set_range(0.0, prop.original_dimension.1 as f64);
-            tag_position.set_value(prop.tag_position as f64);
+            quote_position.set_range(0.0, prop.original_dimension.1);
+            quote_position.set_value(prop.quote_position);
+            tag_position.set_range(0.0, prop.original_dimension.1);
+            tag_position.set_value(prop.tag_position);
 
             prop.rgba = [
                 layer_red.value() as u8,
@@ -156,7 +186,11 @@ fn load_image(
                 layer_alpha.value() as u8,
             ];
             drop(prop);
-            cont.apply_crop();
+
+            match crop {
+                Some((x, y)) => cont.apply_crop_pos(x, y),
+                None => cont.apply_crop(),
+            }
         }
 
         cont.apply_scale();
