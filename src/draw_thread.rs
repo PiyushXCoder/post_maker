@@ -161,7 +161,7 @@ fn load_image(
                 prop.quote = saved_prop.quote;
                 prop.tag = saved_prop.tag;
                 prop.quote_position = saved_prop.quote_position;
-                prop.tag_position = saved_prop.quote_position;
+                prop.tag_position = saved_prop.tag_position;
                 prop.rgba = saved_prop.rgba;
                 prop.is_saved = true;
                 use_defaults = false;

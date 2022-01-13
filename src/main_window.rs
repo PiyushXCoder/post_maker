@@ -35,6 +35,9 @@ pub(crate) struct MainWindow {
     pub(crate) layer_alpha: Spinner,
     pub(crate) quote_position: Spinner,
     pub(crate) tag_position: Spinner,
+    pub(crate) reset_darklayer_btn: Button,
+    pub(crate) reset_quote_position_btn: Button,
+    pub(crate) reset_tag_position_btn: Button,
     pub(crate) crop_btn: Button,
     pub(crate) status: Frame,
     pub(crate) page: Page,
@@ -82,7 +85,7 @@ impl MainWindow {
             &Frame::default()
                 .with_label("Quote:")
                 .with_align(enums::Align::Left | enums::Align::Inside),
-            20,
+            30,
         );
         let quote = MultilineInput::default();
         controls_flex.set_size(&quote, 90);
@@ -90,50 +93,58 @@ impl MainWindow {
             &Frame::default()
                 .with_label("Tag:")
                 .with_align(enums::Align::Left | enums::Align::Inside),
-            20,
+            30,
         );
         let tag = Input::default();
         controls_flex.set_size(&tag, 30);
-        controls_flex.set_size(
-            &Frame::default()
-                .with_label("Dark Layer (RGBA):")
-                .with_align(enums::Align::Left | enums::Align::Inside),
-            20,
-        );
+
+        let mut darklayer_head_flex = Flex::default().row();
+        Frame::default()
+            .with_label("Dark Layer (RGBA):")
+            .with_align(enums::Align::Left | enums::Align::Inside);
+        let reset_darklayer_btn = Button::default().with_label("@returnarrow");
+        darklayer_head_flex.set_size(&reset_darklayer_btn, 30);
+        darklayer_head_flex.end();
+        controls_flex.set_size(&darklayer_head_flex, 30);
+
         let mut darklayer_flex = Flex::default().row();
         darklayer_flex.set_pad(2);
         darklayer_flex.set_size(&Frame::default().with_label("Red"), 30);
         let mut layer_red = Spinner::default();
         layer_red.set_range(0.0, 255.0);
-        darklayer_flex.set_size(&layer_red, 50);
+        // darklayer_flex.set_size(&layer_red, 50);
         darklayer_flex.set_size(&Frame::default().with_label("Green"), 40);
         let mut layer_green = Spinner::default();
         layer_green.set_range(0.0, 255.0);
-        darklayer_flex.set_size(&layer_green, 50);
+        // darklayer_flex.set_size(&layer_green, 50);
         darklayer_flex.set_size(&Frame::default().with_label("Blue"), 30);
         let mut layer_blue = Spinner::default();
         layer_blue.set_range(0.0, 255.0);
-        darklayer_flex.set_size(&layer_blue, 50);
+        // darklayer_flex.set_size(&layer_blue, 50);
         darklayer_flex.set_size(&Frame::default().with_label("Alpha"), 40);
         let mut layer_alpha = Spinner::default();
         layer_alpha.set_range(0.0, 255.0);
-        darklayer_flex.set_size(&layer_alpha, 50);
+        // darklayer_flex.set_size(&layer_alpha, 50);
         darklayer_flex.end();
         controls_flex.set_size(&darklayer_flex, 30);
 
-        let quote_position_flex = Flex::default().row();
+        let mut quote_position_flex = Flex::default().row();
         Frame::default()
             .with_label("Quote Position:")
             .with_align(enums::Align::Left | enums::Align::Inside);
         let quote_position = fltk::misc::Spinner::default();
+        let reset_quote_position_btn = Button::default().with_label("@returnarrow");
+        quote_position_flex.set_size(&reset_quote_position_btn, 30);
         quote_position_flex.end();
         controls_flex.set_size(&quote_position_flex, 30);
 
-        let tag_position_flex = Flex::default().row();
+        let mut tag_position_flex = Flex::default().row();
         Frame::default()
             .with_label("Tag Position:")
             .with_align(enums::Align::Left | enums::Align::Inside);
         let tag_position = fltk::misc::Spinner::default();
+        let reset_tag_position_btn = Button::default().with_label("@returnarrow");
+        tag_position_flex.set_size(&reset_tag_position_btn, 30);
         tag_position_flex.end();
         controls_flex.set_size(&tag_position_flex, 30);
 
@@ -190,6 +201,9 @@ impl MainWindow {
             layer_alpha,
             quote_position,
             tag_position,
+            reset_darklayer_btn,
+            reset_quote_position_btn,
+            reset_tag_position_btn,
             crop_btn,
             status,
             draw_buff,
@@ -254,15 +268,21 @@ impl MainWindow {
         );
 
         let sender = self.sender.clone();
+        let properties = Arc::clone(&self.properties);
         self.menubar.add(
             "&File/Save...\t",
             Shortcut::Ctrl | 's',
             menu::MenuFlag::Normal,
-            move |_| sender.send(DrawMessage::Save).unwrap(),
+            move |_| {
+                let mut prop = properties.write().unwrap();
+                prop.is_saved = true;
+                sender.send(DrawMessage::Save).unwrap();
+            },
         );
 
         let mut config_window = ConfigWindow::new();
         let sender = self.sender.clone();
+        let mut image = self.page.image.clone();
         self.menubar.add(
             "&Edit/Configure...\t",
             Shortcut::None,
@@ -270,6 +290,8 @@ impl MainWindow {
             move |_| {
                 if config_window.show() {
                     sender.send(DrawMessage::Recalc).unwrap();
+                    sender.send(DrawMessage::Flush).unwrap();
+                    image.redraw();
                 }
             },
         );
@@ -294,9 +316,68 @@ impl MainWindow {
     }
 
     fn events(&mut self) {
+        let mut layer_red = self.layer_red.clone();
+        let mut layer_green = self.layer_green.clone();
+        let mut layer_blue = self.layer_blue.clone();
+        let mut layer_alpha = self.layer_alpha.clone();
+        let mut image = self.page.image.clone();
         let sender = self.sender.clone();
-        self.save_btn
-            .set_callback(move |_| sender.send(DrawMessage::Save).unwrap());
+        let properties = Arc::clone(&self.properties);
+        self.reset_darklayer_btn.set_callback(move |_| {
+            let mut prop = properties.write().unwrap();
+            let color = globals::CONFIG.read().unwrap().color_layer;
+            prop.rgba = color;
+            prop.is_saved = false;
+            layer_red.set_value(color[0] as f64);
+            layer_green.set_value(color[1] as f64);
+            layer_blue.set_value(color[2] as f64);
+            layer_alpha.set_value(color[3] as f64);
+            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::Flush).unwrap();
+            image.redraw();
+        });
+
+        let mut quote_position = self.quote_position.clone();
+        let mut image = self.page.image.clone();
+        let sender = self.sender.clone();
+        let properties = Arc::clone(&self.properties);
+        self.reset_quote_position_btn.set_callback(move |_| {
+            let mut prop = properties.write().unwrap();
+            let height = prop.original_dimension.1;
+            let pos = (height * 2.0) / 3.0;
+            prop.quote_position = pos;
+            prop.is_saved = false;
+            quote_position.set_value(pos);
+
+            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::Flush).unwrap();
+            image.redraw();
+        });
+
+        let mut tag_position = self.tag_position.clone();
+        let mut image = self.page.image.clone();
+        let sender = self.sender.clone();
+        let properties = Arc::clone(&self.properties);
+        self.reset_tag_position_btn.set_callback(move |_| {
+            let mut prop = properties.write().unwrap();
+            let height = prop.original_dimension.1;
+            let pos = height / 2.0;
+            prop.tag_position = pos;
+            prop.is_saved = false;
+            tag_position.set_value(pos);
+
+            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::Flush).unwrap();
+            image.redraw();
+        });
+
+        let sender = self.sender.clone();
+        let properties = Arc::clone(&self.properties);
+        self.save_btn.set_callback(move |_| {
+            let mut prop = properties.write().unwrap();
+            prop.is_saved = true;
+            sender.send(DrawMessage::Save).unwrap()
+        });
 
         let properties = Arc::clone(&self.properties);
         let mut crop_win = CropWindow::new();

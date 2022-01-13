@@ -139,54 +139,6 @@ impl ImageContainer {
             prop.original_dimension.1,
         );
 
-        // let layer =
-        //     DynamicImage::ImageRgba8(ImageBuffer::from_fn(width as u32, height as u32, |_, _| {
-        //         image::Rgba(prop.rgba)
-        //     }));
-        // image::imageops::overlay(&mut tmp, &layer, 0, 0);
-
-        // let size = quote_from_height(height);
-        // for (index, line) in prop.quote.lines().enumerate() {
-        //     let (text_width, text_height) = measure_line(
-        //         &globals::FONT_QUOTE,
-        //         line,
-        //         rusttype::Scale::uniform(size as f32),
-        //     );
-
-        //     imageproc::drawing::draw_text_mut(
-        //         &mut tmp,
-        //         image::Rgba([255, 255, 255, 255]),
-        //         ((width - text_width) / 2.0) as u32,
-        //         ((prop.quote_position * height) / prop.original_dimension.1
-        //             + (text_height / 2.0)
-        //             + index as f64 * (text_height * 1.2)) as u32,
-        //         rusttype::Scale::uniform(size as f32),
-        //         &globals::FONT_QUOTE,
-        //         line,
-        //     );
-        // }
-
-        // let size = tag_from_height(height);
-        // for (index, line) in prop.tag.lines().enumerate() {
-        //     let (text_width, text_height) = measure_line(
-        //         &globals::FONT_TAG,
-        //         line,
-        //         rusttype::Scale::uniform(size as f32),
-        //     );
-
-        //     imageproc::drawing::draw_text_mut(
-        //         &mut tmp,
-        //         image::Rgba([255, 255, 255, 255]),
-        //         (width * 0.99 - text_width) as u32,
-        //         ((prop.tag_position * height) / prop.original_dimension.1
-        //             + (text_height / 2.0)
-        //             + index as f64 * (text_height * 1.2)) as u32,
-        //         rusttype::Scale::uniform(size as f32),
-        //         &globals::FONT_TAG,
-        //         line,
-        //     );
-        // }
-
         self.buffer = tmp;
     }
 
@@ -226,56 +178,6 @@ impl ImageContainer {
             prop.tag_position,
             prop.original_dimension.1,
         );
-
-        // let layer = DynamicImage::ImageRgba8(ImageBuffer::from_fn(
-        //     crop_width as u32,
-        //     crop_height as u32,
-        //     |_, _| image::Rgba(prop.rgba),
-        // ));
-        // image::imageops::overlay(&mut img, &layer, 0, 0);
-
-        // let size = quote_from_height(crop_height);
-        // for (index, line) in prop.quote.lines().enumerate() {
-        //     let (text_width, text_height) = measure_line(
-        //         &globals::FONT_QUOTE,
-        //         line,
-        //         rusttype::Scale::uniform(size as f32),
-        //     );
-
-        //     imageproc::drawing::draw_text_mut(
-        //         &mut img,
-        //         image::Rgba([255, 255, 255, 255]),
-        //         ((crop_width - text_width) / 2.0) as u32,
-        //         ((prop.quote_position * crop_height) / prop.original_dimension.1
-        //             + (text_height / 2.0)
-        //             + index as f64 * (text_height * 1.2)) as u32,
-        //         rusttype::Scale::uniform(size as f32),
-        //         &globals::FONT_QUOTE,
-        //         line,
-        //     );
-        // }
-
-        // let size = tag_from_height(crop_height);
-        // for (index, line) in prop.tag.lines().enumerate() {
-        //     let (text_width, text_height) = measure_line(
-        //         &globals::FONT_TAG,
-        //         line,
-        //         rusttype::Scale::uniform(size as f32),
-        //     );
-
-        //     imageproc::drawing::draw_text_mut(
-        //         &mut img,
-        //         image::Rgba([255, 255, 255, 255]),
-        //         (crop_width * 0.99 - text_width) as u32,
-        //         ((prop.tag_position * crop_height) / prop.original_dimension.1
-        //             + (text_height / 2.0)
-        //             + index as f64 * (text_height * 1.2)) as u32,
-        //         rusttype::Scale::uniform(size as f32),
-        //         &globals::FONT_TAG,
-        //         line,
-        //     );
-        // }
-
         image::save_buffer(
             export,
             img.as_rgb8().unwrap().as_raw(),
