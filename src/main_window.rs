@@ -254,11 +254,12 @@ impl MainWindow {
             },
         );
 
+        let sender = self.sender.clone();
         self.menubar.add(
             "&File/Save...\t",
             Shortcut::Ctrl | 's',
             menu::MenuFlag::Normal,
-            |_| {},
+            move |_| sender.send(DrawMessage::Save).unwrap(),
         );
 
         self.menubar.add(
@@ -290,21 +291,37 @@ impl MainWindow {
     }
 
     fn events(&mut self) {
+        let sender = self.sender.clone();
+        self.save_btn
+            .set_callback(move |_| sender.send(DrawMessage::Save).unwrap());
+
         let properties = Arc::clone(&self.properties);
         let mut crop_win = CropWindow::new();
         let sender = self.sender.clone();
         self.crop_btn.set_callback(move |_| {
-            let prop = properties.read().unwrap();
+            let mut prop = properties.write().unwrap();
             if let Some(path) = &prop.path {
                 if let Some((x, y)) = crop_win.load_to_crop(path, prop.crop_position) {
                     sender.send(DrawMessage::ChangeCrop((x, y))).unwrap();
+                    prop.is_saved = false;
                 }
             }
         });
 
         let mut file_choice = self.file_choice.clone();
         let sender = self.sender.clone();
+        let properties = Arc::clone(&self.properties);
         self.next_btn.set_callback(move |_| {
+            let prop = properties.read().unwrap();
+            if !prop.is_saved {
+                let save = fltk::dialog::choice_default("Save?", "yes", "no", "cancel");
+                match save {
+                    0 => sender.send(DrawMessage::Save).unwrap(),
+                    1 => {}
+                    _ => return,
+                }
+            }
+
             if file_choice.value() == file_choice.size() - 2 {
                 file_choice.set_value(0);
             } else {
@@ -315,7 +332,18 @@ impl MainWindow {
 
         let mut file_choice = self.file_choice.clone();
         let sender = self.sender.clone();
+        let properties = Arc::clone(&self.properties);
         self.back_btn.set_callback(move |_| {
+            let prop = properties.read().unwrap();
+            if !prop.is_saved {
+                let save = fltk::dialog::choice_default("Save?", "yes", "no", "cancel");
+                match save {
+                    0 => sender.send(DrawMessage::Save).unwrap(),
+                    1 => {}
+                    _ => return,
+                }
+            }
+
             if file_choice.value() == 0 {
                 file_choice.set_value(file_choice.size() - 2);
             } else {
@@ -325,7 +353,17 @@ impl MainWindow {
         });
 
         let sender = self.sender.clone();
+        let properties = Arc::clone(&self.properties);
         self.file_choice.set_callback(move |_| {
+            let prop = properties.read().unwrap();
+            if !prop.is_saved {
+                let save = fltk::dialog::choice_default("Save?", "yes", "no", "cancel");
+                match save {
+                    0 => sender.send(DrawMessage::Save).unwrap(),
+                    1 => {}
+                    _ => return,
+                }
+            }
             sender.send(DrawMessage::Open).unwrap();
         });
 
@@ -336,6 +374,7 @@ impl MainWindow {
             if ev == enums::Event::KeyUp {
                 let mut prop = properties.write().unwrap();
                 prop.quote = f.value();
+                prop.is_saved = false;
                 sender.send(DrawMessage::Recalc).unwrap();
                 sender.send(DrawMessage::Flush).unwrap();
                 image.redraw();
@@ -350,6 +389,7 @@ impl MainWindow {
             if ev == enums::Event::KeyUp {
                 let mut prop = properties.write().unwrap();
                 prop.tag = f.value();
+                prop.is_saved = false;
                 sender.send(DrawMessage::Recalc).unwrap();
                 sender.send(DrawMessage::Flush).unwrap();
                 image.redraw();
@@ -363,6 +403,7 @@ impl MainWindow {
         self.quote_position.set_callback(move |f| {
             let mut prop = properties.write().unwrap();
             prop.quote_position = f.value();
+            prop.is_saved = false;
             sender.send(DrawMessage::Recalc).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
@@ -374,6 +415,7 @@ impl MainWindow {
         self.tag_position.set_callback(move |f| {
             let mut prop = properties.write().unwrap();
             prop.tag_position = f.value();
+            prop.is_saved = false;
             sender.send(DrawMessage::Recalc).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
@@ -385,6 +427,7 @@ impl MainWindow {
         self.layer_red.set_callback(move |f| {
             let mut prop = properties.write().unwrap();
             prop.rgba[0] = f.value() as u8;
+            prop.is_saved = false;
             sender.send(DrawMessage::Recalc).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
@@ -396,6 +439,7 @@ impl MainWindow {
         self.layer_green.set_callback(move |f| {
             let mut prop = properties.write().unwrap();
             prop.rgba[1] = f.value() as u8;
+            prop.is_saved = false;
             sender.send(DrawMessage::Recalc).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
@@ -407,6 +451,7 @@ impl MainWindow {
         self.layer_blue.set_callback(move |f| {
             let mut prop = properties.write().unwrap();
             prop.rgba[2] = f.value() as u8;
+            prop.is_saved = false;
             sender.send(DrawMessage::Recalc).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
@@ -418,6 +463,7 @@ impl MainWindow {
         self.layer_alpha.set_callback(move |f| {
             let mut prop = properties.write().unwrap();
             prop.rgba[3] = f.value() as u8;
+            prop.is_saved = false;
             sender.send(DrawMessage::Recalc).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();

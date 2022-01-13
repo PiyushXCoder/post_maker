@@ -26,6 +26,7 @@ pub(crate) enum DrawMessage {
     ChangeCrop((f64, f64)),
     Recalc,
     Flush,
+    Save,
 }
 
 pub(crate) fn spawn_image_thread(
@@ -98,6 +99,13 @@ pub(crate) fn spawn_image_thread(
                 DrawMessage::Flush => {
                     flush_buffer(&app_sender, &mut _container);
                 }
+                DrawMessage::Save => {
+                    if let Some(cont) = &mut _container {
+                        status.set_label("Saving...");
+                        cont.save();
+                        status.set_label("");
+                    }
+                }
             }
         }
     });
@@ -154,6 +162,7 @@ fn load_image(
                 prop.quote_position = saved_prop.quote_position;
                 prop.tag_position = saved_prop.quote_position;
                 prop.rgba = saved_prop.rgba;
+                prop.is_saved = true;
                 use_defaults = false;
                 let saved = prop.is_saved;
                 drop(prop);
@@ -173,7 +182,6 @@ fn load_image(
         if use_defaults {
             let mut prop = properties.write().unwrap();
             prop.quote = "".to_owned();
-
             quote_position.set_range(0.0, prop.original_dimension.1);
             quote_position.set_value(prop.quote_position);
             tag_position.set_range(0.0, prop.original_dimension.1);
@@ -185,11 +193,18 @@ fn load_image(
                 layer_blue.value() as u8,
                 layer_alpha.value() as u8,
             ];
-            drop(prop);
 
             match crop {
-                Some((x, y)) => cont.apply_crop_pos(x, y),
-                None => cont.apply_crop(),
+                Some((x, y)) => {
+                    prop.is_saved = false;
+                    drop(prop);
+                    cont.apply_crop_pos(x, y);
+                }
+                None => {
+                    prop.is_saved = true;
+                    drop(prop);
+                    cont.apply_crop();
+                }
             }
         }
 
