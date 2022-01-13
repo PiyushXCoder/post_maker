@@ -1,14 +1,13 @@
 mod config;
 mod crop_window;
 mod draw_thread;
+mod globals;
 mod main_window;
-mod properties;
 mod utils;
 
 // use crop_window::CropWindow;
 use fltk::{
     app::{channel, App},
-    enums::Font,
     prelude::*,
 };
 use fltk_theme::WidgetTheme;
@@ -31,10 +30,6 @@ fn main() {
             .into(),
     )
     .apply();
-    let f1 = Font::load_font("ReenieBeanie-Regular.ttf").unwrap();
-    let f2 = Font::load_font("Kalam-Regular.ttf").unwrap();
-    Font::set_font(Font::Times, &f1);
-    Font::set_font(Font::TimesItalic, &f2);
 
     let draw_buff: Arc<RwLock<Vec<u8>>> = Arc::new(RwLock::new(vec![]));
     let (main_sender, main_receiver) = channel::<AppMessage>();

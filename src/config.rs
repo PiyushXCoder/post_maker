@@ -1,5 +1,8 @@
+use std::path::Path;
+
 use clap::{ArgEnum, Parser};
 use fltk_theme::ThemeType;
+use serde::{Deserialize, Serialize};
 
 /// Simple program calculate size of stuff in quote image
 #[derive(Parser, Debug)]
@@ -52,6 +55,54 @@ impl Into<ThemeType> for Themes {
                 }
             }
         }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ConfigFile {
+    pub quote_font_ttf: String,
+    pub tag_font_ttf: String,
+    pub quote_font_ratio: f64,
+    pub tag_font_ratio: f64,
+    pub color_layer: [u8; 4],
+}
+
+impl Default for ConfigFile {
+    fn default() -> Self {
+        Self {
+            quote_font_ttf: String::new(),
+            tag_font_ttf: String::new(),
+            quote_font_ratio: 259.0,
+            tag_font_ratio: 96.0,
+            color_layer: [25, 29, 34, 190],
+        }
+    }
+}
+
+impl ConfigFile {
+    pub(crate) fn load() -> Self {
+        let conf = match dirs::config_dir() {
+            Some(path) => path.join("post_maker.config"),
+            None => std::env::current_exe()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .join("post_maker.config"),
+        };
+
+        if conf.exists() {
+            if let Ok(text) = std::fs::read_to_string(&conf) {
+                if let Ok(config) = serde_json::from_str::<Self>(&text) {
+                    return config;
+                }
+            }
+        }
+
+        let config = Self::default();
+        if let Err(_) = std::fs::write(&conf, serde_json::to_string(&config).unwrap()) {
+            eprintln!("Can't write config!");
+        }
+        config
     }
 }
 

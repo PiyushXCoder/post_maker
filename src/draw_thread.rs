@@ -1,6 +1,7 @@
 //! Thread to manage drawing in background
 
 use crate::{
+    globals,
     main_window::{MainWindow, Page},
     AppMessage,
 };
@@ -187,12 +188,11 @@ fn load_image(
             tag_position.set_range(0.0, prop.original_dimension.1);
             tag_position.set_value(prop.tag_position);
 
-            prop.rgba = [
-                layer_red.value() as u8,
-                layer_green.value() as u8,
-                layer_blue.value() as u8,
-                layer_alpha.value() as u8,
-            ];
+            layer_red.set_value(globals::CONFIG.color_layer[0] as f64);
+            layer_green.set_value(globals::CONFIG.color_layer[1] as f64);
+            layer_blue.set_value(globals::CONFIG.color_layer[2] as f64);
+            layer_alpha.set_value(globals::CONFIG.color_layer[3] as f64);
+            prop.rgba = globals::CONFIG.color_layer;
 
             match crop {
                 Some((x, y)) => {
