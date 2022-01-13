@@ -1,7 +1,7 @@
-use crate::config_window::ConfigWindow;
 use crate::crop_window::CropWindow;
 use crate::draw_thread::*;
 use crate::utils::ImageProperties;
+use crate::{config_window::ConfigWindow, globals};
 use fltk::{
     app,
     button::Button,
@@ -10,6 +10,7 @@ use fltk::{
     enums::Shortcut,
     frame::Frame,
     group::Flex,
+    image::SvgImage,
     input::{Input, MultilineInput},
     menu,
     misc::Spinner,
@@ -55,6 +56,9 @@ impl MainWindow {
         draw_buff: Arc<RwLock<Vec<u8>>>,
     ) -> Self {
         let mut win = Window::new(0, 0, 1000, 600, "Post Maker").center_screen();
+        if let Ok(image) = SvgImage::from_data(&globals::ICON) {
+            win.set_icon(Some(image));
+        }
 
         let mut main_flex = Flex::default().size_of_parent().column();
         let menubar = menu::SysMenuBar::default();

@@ -1,6 +1,10 @@
-use crate::utils::{self, Coord, ImageContainer, ImageProperties};
+use crate::{
+    globals,
+    utils::{self, Coord, ImageContainer, ImageProperties},
+};
 use fltk::{
-    app, button::Button, draw, enums::Event, frame::Frame, group::Flex, prelude::*, window::Window,
+    app, button::Button, draw, enums::Event, frame::Frame, group::Flex, image::SvgImage,
+    prelude::*, window::Window,
 };
 use image::GenericImageView;
 use std::{
@@ -29,6 +33,9 @@ pub(crate) struct Page {
 impl CropWindow {
     pub(crate) fn new() -> Self {
         let mut win = Window::new(0, 0, 500, 600, "Crop").center_screen();
+        if let Ok(image) = SvgImage::from_data(&globals::ICON) {
+            win.set_icon(Some(image));
+        }
 
         let mut main_flex = Flex::default().size_of_parent().column();
 
