@@ -1,6 +1,5 @@
-use std::path::Path;
-
 use clap::{ArgEnum, Parser};
+use fltk::dialog;
 use fltk_theme::ThemeType;
 use serde::{Deserialize, Serialize};
 
@@ -100,9 +99,26 @@ impl ConfigFile {
 
         let config = Self::default();
         if let Err(_) = std::fs::write(&conf, serde_json::to_string(&config).unwrap()) {
+            dialog::message_default("Can't write config!");
             eprintln!("Can't write config!");
         }
         config
+    }
+
+    pub(crate) fn save(&self) {
+        let conf = match dirs::config_dir() {
+            Some(path) => path.join("post_maker.config"),
+            None => std::env::current_exe()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .join("post_maker.config"),
+        };
+
+        if let Err(_) = std::fs::write(&conf, serde_json::to_string(self).unwrap()) {
+            dialog::message_default("Can't write config!");
+            eprintln!("Can't write config!");
+        }
     }
 }
 

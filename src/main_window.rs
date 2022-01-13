@@ -1,3 +1,4 @@
+use crate::config_window::ConfigWindow;
 use crate::crop_window::CropWindow;
 use crate::draw_thread::*;
 use crate::utils::ImageProperties;
@@ -53,8 +54,6 @@ impl MainWindow {
         sender: app::Sender<crate::AppMessage>,
         draw_buff: Arc<RwLock<Vec<u8>>>,
     ) -> Self {
-        let color = [25, 29, 34, 190];
-
         let mut win = Window::new(0, 0, 1000, 600, "Post Maker").center_screen();
 
         let mut main_flex = Flex::default().size_of_parent().column();
@@ -102,22 +101,18 @@ impl MainWindow {
         darklayer_flex.set_size(&Frame::default().with_label("Red"), 30);
         let mut layer_red = Spinner::default();
         layer_red.set_range(0.0, 255.0);
-        layer_red.set_value(color[0] as f64);
         darklayer_flex.set_size(&layer_red, 50);
         darklayer_flex.set_size(&Frame::default().with_label("Green"), 40);
         let mut layer_green = Spinner::default();
         layer_green.set_range(0.0, 255.0);
-        layer_green.set_value(color[1] as f64);
         darklayer_flex.set_size(&layer_green, 50);
         darklayer_flex.set_size(&Frame::default().with_label("Blue"), 30);
         let mut layer_blue = Spinner::default();
         layer_blue.set_range(0.0, 255.0);
-        layer_blue.set_value(color[2] as f64);
         darklayer_flex.set_size(&layer_blue, 50);
         darklayer_flex.set_size(&Frame::default().with_label("Alpha"), 40);
         let mut layer_alpha = Spinner::default();
         layer_alpha.set_range(0.0, 255.0);
-        layer_alpha.set_value(color[3] as f64);
         darklayer_flex.set_size(&layer_alpha, 50);
         darklayer_flex.end();
         controls_flex.set_size(&darklayer_flex, 30);
@@ -262,12 +257,16 @@ impl MainWindow {
             move |_| sender.send(DrawMessage::Save).unwrap(),
         );
 
+        let mut config_window = ConfigWindow::new();
+        let sender = self.sender.clone();
         self.menubar.add(
             "&Edit/Configure...\t",
             Shortcut::None,
             menu::MenuFlag::Normal,
-            |_| {
-                println!("wow");
+            move |_| {
+                if config_window.show() {
+                    sender.send(DrawMessage::Recalc).unwrap();
+                }
             },
         );
     }

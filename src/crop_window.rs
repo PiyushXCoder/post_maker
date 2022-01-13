@@ -61,6 +61,7 @@ impl CropWindow {
         main_flex.end();
 
         win.end();
+        win.make_modal(true);
         win.make_resizable(true);
 
         let mut crop_win = Self {
@@ -119,7 +120,6 @@ impl CropWindow {
 
         self.page.image_view.redraw();
         self.win.show();
-        self.win.make_modal(true);
         while self.win.shown() {
             app::wait();
         }

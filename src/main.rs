@@ -1,4 +1,5 @@
 mod config;
+mod config_window;
 mod crop_window;
 mod draw_thread;
 mod globals;

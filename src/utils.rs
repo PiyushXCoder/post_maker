@@ -394,11 +394,11 @@ pub(crate) fn height_from_width(width: f64) -> f64 {
 }
 
 pub(crate) fn quote_from_height(height: f64) -> f64 {
-    (height * globals::CONFIG.quote_font_ratio) / 5000.0
+    (height * globals::CONFIG.read().unwrap().quote_font_ratio) / 5000.0
 }
 
 pub(crate) fn tag_from_height(height: f64) -> f64 {
-    (height * globals::CONFIG.tag_font_ratio) / 5000.0
+    (height * globals::CONFIG.read().unwrap().tag_font_ratio) / 5000.0
 }
 
 pub(crate) fn measure_line(
