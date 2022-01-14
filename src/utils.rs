@@ -168,7 +168,9 @@ impl ImageContainer {
                 .unwrap(),
         );
 
-        fs::write(&path_conf, serde_json::to_string(&*prop).unwrap()).unwrap();
+        if let Err(_) = fs::write(&path_conf, serde_json::to_string(&*prop).unwrap()) {
+            dialog::message_default("Failed to save conf!");
+        }
 
         let mut img = image::open(&path_original).unwrap();
         let (width, height): (f64, f64) = Coord::from(img.dimensions()).into();
@@ -192,7 +194,7 @@ impl ImageContainer {
         );
 
         if let Err(_) = img.save_with_format(&export, image::ImageFormat::Png) {
-            dialog::message_default("Failed to save!");
+            dialog::message_default("Failed to export png!");
         }
     }
 }
