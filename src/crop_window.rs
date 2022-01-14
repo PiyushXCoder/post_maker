@@ -9,11 +9,10 @@ use fltk::{
 use image::GenericImageView;
 use std::{
     cell::RefCell,
+    path::PathBuf,
     rc::Rc,
     sync::{Arc, RwLock},
 };
-
-static mut PATH: String = String::new();
 
 /// Window to crop the existing image
 pub(crate) struct CropWindow {
@@ -90,13 +89,9 @@ impl CropWindow {
     /// Call it to show window to crop image
     pub(crate) fn load_to_crop(
         &mut self,
-        path: &str,
+        path: &PathBuf,
         crop_pos: Option<(f64, f64)>,
     ) -> Option<(f64, f64)> {
-        unsafe {
-            PATH = path.to_owned();
-        }
-
         let mut container =
             ImageContainer::new(path, Arc::new(RwLock::new(ImageProperties::new())));
         {

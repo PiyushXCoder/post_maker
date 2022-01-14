@@ -15,7 +15,7 @@ use fltk::{
 
 use std::{
     fs,
-    path::Path,
+    path::{Path, PathBuf},
     sync::{mpsc, Arc, RwLock},
 };
 
@@ -37,6 +37,8 @@ pub(crate) fn spawn_image_thread(
     main_win: &MainWindow,
 ) {
     let mut file_choice = main_win.file_choice.clone();
+    let mut next_btn = main_win.next_btn.clone();
+    let mut back_btn = main_win.back_btn.clone();
     let mut quote = main_win.quote.clone();
     let mut tag = main_win.tag.clone();
     let mut layer_red = main_win.layer_red.clone();
@@ -47,6 +49,7 @@ pub(crate) fn spawn_image_thread(
     let mut tag_position = main_win.tag_position.clone();
     let mut page = main_win.page.clone();
     let mut status = main_win.status.clone();
+    let images_path = Arc::clone(&main_win.images_path);
 
     let mut _container: Option<ImageContainer> = None;
     std::thread::spawn(move || loop {
@@ -56,6 +59,7 @@ pub(crate) fn spawn_image_thread(
                     status.set_label("Loading...");
                     load_image(
                         &mut file_choice,
+                        Arc::clone(&images_path),
                         None,
                         &mut quote,
                         &mut tag,
@@ -74,8 +78,12 @@ pub(crate) fn spawn_image_thread(
                 }
                 DrawMessage::ChangeCrop((x, y)) => {
                     status.set_label("Loading...");
+                    file_choice.deactivate();
+                    next_btn.deactivate();
+                    back_btn.deactivate();
                     load_image(
                         &mut file_choice,
+                        Arc::clone(&images_path),
                         Some((x, y)),
                         &mut quote,
                         &mut tag,
@@ -90,6 +98,9 @@ pub(crate) fn spawn_image_thread(
                         &properties,
                         &mut _container,
                     );
+                    file_choice.activate();
+                    next_btn.activate();
+                    back_btn.activate();
                     status.set_label("");
                 }
                 DrawMessage::Recalc => {
@@ -114,6 +125,7 @@ pub(crate) fn spawn_image_thread(
 
 fn load_image(
     file_choice: &mut menu::Choice,
+    images_path: Arc<RwLock<Vec<PathBuf>>>,
     crop: Option<(f64, f64)>,
     quote: &mut MultilineInput,
     tag: &mut Input,
@@ -128,10 +140,8 @@ fn load_image(
     properties: &Arc<RwLock<ImageProperties>>,
     container: &mut Option<ImageContainer>,
 ) {
-    let file: String = match file_choice.choice() {
-        Some(val) => val,
-        None => return,
-    };
+    let imgs = images_path.read().unwrap();
+    let file = imgs.get(file_choice.value() as usize).unwrap();
 
     *container = Some(ImageContainer::new(&file, Arc::clone(properties)));
 

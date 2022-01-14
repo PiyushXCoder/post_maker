@@ -1,9 +1,10 @@
 use std::{
     fs,
-    path::Path,
+    path::{Path, PathBuf},
     sync::{Arc, RwLock},
 };
 
+use fltk::dialog;
 use image::{DynamicImage, GenericImageView, ImageBuffer};
 use serde::{Deserialize, Serialize};
 
@@ -55,8 +56,16 @@ pub(crate) struct ImageContainer {
 }
 
 impl ImageContainer {
-    pub(crate) fn new(path: &str, properties: Arc<RwLock<ImageProperties>>) -> Self {
-        let img = image::open(path).unwrap();
+    pub(crate) fn new(path: &PathBuf, properties: Arc<RwLock<ImageProperties>>) -> Self {
+        let img = match image::open(path) {
+            Ok(i) => i,
+            Err(_) => {
+                dialog::message_default("Failed to open image");
+                panic!("Failed to open image");
+            }
+        };
+
+        let img = DynamicImage::ImageRgb8(img.into_rgb8());
         let (width, height): (f64, f64) = Coord::from(img.dimensions()).into();
         let (width, height) = (width, height);
 
@@ -178,20 +187,16 @@ impl ImageContainer {
             prop.tag_position,
             prop.original_dimension.1,
         );
-        image::save_buffer(
-            export,
-            img.as_rgb8().unwrap().as_raw(),
-            crop_width as u32,
-            crop_height as u32,
-            image::ColorType::Rgb8,
-        )
-        .unwrap();
+
+        if let Err(_) = img.save_with_format(&export, image::ImageFormat::Png) {
+            dialog::message_default("Failed to save!");
+        }
     }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct ImageProperties {
-    pub(crate) path: Option<String>,
+    pub(crate) path: Option<PathBuf>,
     pub(crate) dimension: (f64, f64),
     pub(crate) original_dimension: (f64, f64),
     pub(crate) crop_position: Option<(f64, f64)>,

@@ -17,6 +17,7 @@ use fltk::{
     prelude::*,
     window::Window,
 };
+use std::path::PathBuf;
 use std::sync::{mpsc, RwLock};
 use std::{ffi::OsStr, fs, sync::Arc};
 
@@ -41,6 +42,7 @@ pub(crate) struct MainWindow {
     pub(crate) crop_btn: Button,
     pub(crate) status: Frame,
     pub(crate) page: Page,
+    pub(crate) images_path: Arc<RwLock<Vec<PathBuf>>>,
     pub(crate) draw_buff: Arc<RwLock<Vec<u8>>>,
     pub(crate) properties: Arc<RwLock<ImageProperties>>,
     pub(crate) sender: mpsc::Sender<DrawMessage>,
@@ -206,6 +208,7 @@ impl MainWindow {
             reset_tag_position_btn,
             crop_btn,
             status,
+            images_path: Arc::new(RwLock::new(vec![])),
             draw_buff,
             properties: Arc::clone(&properties),
             page: Page {
@@ -226,6 +229,7 @@ impl MainWindow {
         let mut file_choice = self.file_choice.clone();
         let sender = self.sender.clone();
         let mut win = self.win.clone();
+        let imgs = Arc::clone(&self.images_path);
         self.menubar.add(
             "&File/Open Folder...\t",
             Shortcut::Ctrl | 'o',
@@ -249,11 +253,16 @@ impl MainWindow {
                 }
                 let files = fs::read_dir(&path).unwrap();
                 let mut text = String::new();
+                let mut imgs_b = imgs.write().unwrap();
+                *imgs_b = vec![];
                 for file in files {
                     let file = file.unwrap();
                     let path = file.path();
-                    if path.extension() == Some(OsStr::new("jpg")) {
-                        text = format!("{}|{}", text, path.to_str().unwrap());
+                    if path.extension() == Some(OsStr::new("jpg"))
+                        || path.extension() == Some(OsStr::new("png"))
+                    {
+                        text = format!("{}|{}", text, path.file_name().unwrap().to_str().unwrap());
+                        imgs_b.push(path);
                     }
                 }
                 if text.len() == 0 {
