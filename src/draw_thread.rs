@@ -193,17 +193,14 @@ fn load_image(
                 prop.rgba = saved_prop.rgba;
                 prop.is_saved = true;
                 use_defaults = false;
-                let saved = prop.is_saved;
                 drop(prop);
-                if saved {
-                    if let Some((x, y)) = saved_prop.crop_position {
-                        cont.apply_crop_pos(x, y);
-                    }
-                } else {
-                    match crop {
+
+                match crop {
+                    Some((x, y)) => cont.apply_crop_pos(x, y),
+                    None => match saved_prop.crop_position {
                         Some((x, y)) => cont.apply_crop_pos(x, y),
                         None => cont.apply_crop(),
-                    }
+                    },
                 }
             }
         }
