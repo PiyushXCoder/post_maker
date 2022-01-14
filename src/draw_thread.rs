@@ -160,8 +160,6 @@ fn load_image(
     *container = Some(ImageContainer::new(&file, Arc::clone(properties)));
 
     if let Some(cont) = container {
-        quote.set_value("");
-
         let file = Path::new(&file);
         let conf = file.with_extension("conf");
 
@@ -207,7 +205,10 @@ fn load_image(
 
         if use_defaults {
             let mut prop = properties.write().unwrap();
-            prop.quote = "".to_owned();
+            if crop.is_none() {
+                quote.set_value("");
+                prop.quote = "".to_owned();
+            }
             quote_position.set_range(0.0, prop.original_dimension.1);
             quote_position.set_value(prop.quote_position);
             tag_position.set_range(0.0, prop.original_dimension.1);
