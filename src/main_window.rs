@@ -2,6 +2,7 @@ use crate::crop_window::CropWindow;
 use crate::draw_thread::*;
 use crate::utils::ImageProperties;
 use crate::{config_window::ConfigWindow, globals};
+use fltk::valuator::{Slider, SliderType};
 use fltk::{
     app,
     button::Button,
@@ -36,9 +37,12 @@ pub(crate) struct MainWindow {
     pub(crate) layer_alpha: Spinner,
     pub(crate) quote_position: Spinner,
     pub(crate) tag_position: Spinner,
+    pub(crate) quote_position_slider: Slider,
+    pub(crate) tag_position_slider: Slider,
     pub(crate) reset_darklayer_btn: Button,
     pub(crate) reset_quote_position_btn: Button,
     pub(crate) reset_tag_position_btn: Button,
+    pub(crate) reset_file_choice: Button,
     pub(crate) crop_btn: Button,
     pub(crate) status: Frame,
     pub(crate) page: Page,
@@ -77,6 +81,8 @@ impl MainWindow {
         let save_btn = Button::default().with_label("Save");
         toolbar_flex.set_size(&save_btn, 50);
         let file_choice = menu::Choice::default();
+        let reset_file_choice = Button::default().with_label("@returnarrow");
+        toolbar_flex.set_size(&reset_file_choice, 30);
         toolbar_flex.end();
         main_flex.set_size(&toolbar_flex, 30);
 
@@ -140,6 +146,10 @@ impl MainWindow {
         quote_position_flex.end();
         controls_flex.set_size(&quote_position_flex, 30);
 
+        let mut quote_position_slider = Slider::default().with_type(SliderType::HorizontalNice);
+        quote_position_slider.set_step(1.0, 1);
+        controls_flex.set_size(&quote_position_slider, 30);
+
         let mut tag_position_flex = Flex::default().row();
         Frame::default()
             .with_label("Tag Position:")
@@ -149,6 +159,10 @@ impl MainWindow {
         tag_position_flex.set_size(&reset_tag_position_btn, 30);
         tag_position_flex.end();
         controls_flex.set_size(&tag_position_flex, 30);
+
+        let mut tag_position_slider = Slider::default().with_type(SliderType::HorizontalNice);
+        tag_position_slider.set_step(1.0, 1);
+        controls_flex.set_size(&tag_position_slider, 30);
 
         let mut actions_flex = Flex::default().row();
         Frame::default();
@@ -203,9 +217,12 @@ impl MainWindow {
             layer_alpha,
             quote_position,
             tag_position,
+            quote_position_slider,
+            tag_position_slider,
             reset_darklayer_btn,
             reset_quote_position_btn,
             reset_tag_position_btn,
+            reset_file_choice,
             crop_btn,
             status,
             images_path: Arc::new(RwLock::new(vec![])),
@@ -228,20 +245,17 @@ impl MainWindow {
     fn menu(&mut self) {
         let mut file_choice = self.file_choice.clone();
         let sender = self.sender.clone();
-        let mut win = self.win.clone();
         let imgs = Arc::clone(&self.images_path);
         self.menubar.add(
             "&File/Open Folder...\t",
             Shortcut::Ctrl | 'o',
             menu::MenuFlag::Normal,
             move |_| {
-                win.redraw();
                 let mut chooser = NativeFileChooser::new(fltk::dialog::FileDialogType::BrowseDir);
                 chooser.set_option(fltk::dialog::FileDialogOptions::NewFolder);
                 chooser.show();
                 let path = chooser.filename();
                 if !path.exists() {
-                    win.activate();
                     return;
                 }
                 let expost_dir = path.join("export");
@@ -251,28 +265,7 @@ impl MainWindow {
                         return;
                     }
                 }
-                let files = fs::read_dir(&path).unwrap();
-                let mut text = String::new();
-                let mut imgs_b = imgs.write().unwrap();
-                *imgs_b = vec![];
-                for file in files {
-                    let file = file.unwrap();
-                    let path = file.path();
-                    if path.extension() == Some(OsStr::new("jpg"))
-                        || path.extension() == Some(OsStr::new("png"))
-                    {
-                        text = format!("{}|{}", text, path.file_name().unwrap().to_str().unwrap());
-                        imgs_b.push(path);
-                    }
-                }
-                if text.len() == 0 {
-                    win.activate();
-                    return;
-                }
-                file_choice.clear();
-                file_choice.add_choice(&text[1..]);
-                file_choice.set_value(0);
-                sender.send(DrawMessage::Open).unwrap();
+                load_dir(&path, Arc::clone(&imgs), &mut file_choice, &sender);
             },
         );
 
@@ -325,6 +318,17 @@ impl MainWindow {
     }
 
     fn events(&mut self) {
+        let mut file_choice = self.file_choice.clone();
+        let sender = self.sender.clone();
+        let imgs = Arc::clone(&self.images_path);
+        self.reset_file_choice.set_callback(move |_| {
+            let path = match imgs.read().unwrap().first() {
+                Some(path) => path.parent().unwrap().to_path_buf(),
+                None => return,
+            };
+            load_dir(&path, Arc::clone(&imgs), &mut file_choice, &sender);
+        });
+
         let mut layer_red = self.layer_red.clone();
         let mut layer_green = self.layer_green.clone();
         let mut layer_blue = self.layer_blue.clone();
@@ -347,6 +351,7 @@ impl MainWindow {
         });
 
         let mut quote_position = self.quote_position.clone();
+        let mut quote_position_slider = self.quote_position_slider.clone();
         let mut image = self.page.image.clone();
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
@@ -357,6 +362,7 @@ impl MainWindow {
             prop.quote_position = pos;
             prop.is_saved = false;
             quote_position.set_value(pos);
+            quote_position_slider.set_value(pos);
 
             sender.send(DrawMessage::Recalc).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
@@ -364,6 +370,7 @@ impl MainWindow {
         });
 
         let mut tag_position = self.tag_position.clone();
+        let mut tag_position_slider = self.tag_position_slider.clone();
         let mut image = self.page.image.clone();
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
@@ -374,6 +381,7 @@ impl MainWindow {
             prop.tag_position = pos;
             prop.is_saved = false;
             tag_position.set_value(pos);
+            tag_position_slider.set_value(pos);
 
             sender.send(DrawMessage::Recalc).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
@@ -493,9 +501,11 @@ impl MainWindow {
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
+        let mut quote_position_slider = self.quote_position_slider.clone();
         self.quote_position.set_callback(move |f| {
             let mut prop = properties.write().unwrap();
             prop.quote_position = f.value();
+            quote_position_slider.set_value(f.value());
             prop.is_saved = false;
             sender.send(DrawMessage::Recalc).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
@@ -505,9 +515,39 @@ impl MainWindow {
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
+        let mut quote_position = self.quote_position.clone();
+        self.quote_position_slider.set_callback(move |f| {
+            let mut prop = properties.write().unwrap();
+            prop.quote_position = f.value();
+            quote_position.set_value(f.value());
+            prop.is_saved = false;
+            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::Flush).unwrap();
+            image.redraw();
+        });
+
+        let mut image = self.page.image.clone();
+        let properties = Arc::clone(&self.properties);
+        let sender = self.sender.clone();
+        let mut tag_position_slider = self.tag_position_slider.clone();
         self.tag_position.set_callback(move |f| {
             let mut prop = properties.write().unwrap();
             prop.tag_position = f.value();
+            tag_position_slider.set_value(f.value());
+            prop.is_saved = false;
+            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::Flush).unwrap();
+            image.redraw();
+        });
+
+        let mut image = self.page.image.clone();
+        let properties = Arc::clone(&self.properties);
+        let sender = self.sender.clone();
+        let mut tag_position = self.tag_position.clone();
+        self.tag_position_slider.set_callback(move |f| {
+            let mut prop = properties.write().unwrap();
+            prop.tag_position = f.value();
+            tag_position.set_value(f.value());
             prop.is_saved = false;
             sender.send(DrawMessage::Recalc).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
@@ -562,4 +602,33 @@ impl MainWindow {
             image.redraw();
         });
     }
+}
+
+fn load_dir(
+    path: &PathBuf,
+    imgs: Arc<RwLock<Vec<PathBuf>>>,
+    file_choice: &mut menu::Choice,
+    sender: &mpsc::Sender<DrawMessage>,
+) {
+    let files = fs::read_dir(path).unwrap();
+    let mut text = String::new();
+    let mut imgs_b = imgs.write().unwrap();
+    *imgs_b = vec![];
+    for file in files {
+        let file = file.unwrap();
+        let path = file.path();
+        if path.extension() == Some(OsStr::new("jpg"))
+            || path.extension() == Some(OsStr::new("png"))
+        {
+            text = format!("{}|{}", text, path.file_name().unwrap().to_str().unwrap());
+            imgs_b.push(path);
+        }
+    }
+    if text.len() == 0 {
+        return;
+    }
+    file_choice.clear();
+    file_choice.add_choice(&text[1..]);
+    file_choice.set_value(0);
+    sender.send(DrawMessage::Open).unwrap();
 }

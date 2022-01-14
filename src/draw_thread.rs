@@ -11,6 +11,7 @@ use fltk::{
     menu,
     misc::Spinner,
     prelude::*,
+    valuator::Slider,
 };
 
 use std::{
@@ -47,6 +48,8 @@ pub(crate) fn spawn_image_thread(
     let mut layer_alpha = main_win.layer_alpha.clone();
     let mut quote_position = main_win.quote_position.clone();
     let mut tag_position = main_win.tag_position.clone();
+    let mut quote_position_slider = main_win.quote_position_slider.clone();
+    let mut tag_position_slider = main_win.tag_position_slider.clone();
     let mut page = main_win.page.clone();
     let mut status = main_win.status.clone();
     let images_path = Arc::clone(&main_win.images_path);
@@ -69,6 +72,8 @@ pub(crate) fn spawn_image_thread(
                         &mut layer_alpha,
                         &mut quote_position,
                         &mut tag_position,
+                        &mut quote_position_slider,
+                        &mut tag_position_slider,
                         &mut page,
                         &app_sender,
                         &properties,
@@ -93,6 +98,8 @@ pub(crate) fn spawn_image_thread(
                         &mut layer_alpha,
                         &mut quote_position,
                         &mut tag_position,
+                        &mut quote_position_slider,
+                        &mut tag_position_slider,
                         &mut page,
                         &app_sender,
                         &properties,
@@ -135,6 +142,8 @@ fn load_image(
     layer_alpha: &mut Spinner,
     quote_position: &mut Spinner,
     tag_position: &mut Spinner,
+    quote_position_slider: &mut Slider,
+    tag_position_slider: &mut Slider,
     page: &mut Page,
     app_sender: &app::Sender<crate::AppMessage>,
     properties: &Arc<RwLock<ImageProperties>>,
@@ -167,6 +176,10 @@ fn load_image(
                 quote_position.set_value(saved_prop.quote_position);
                 tag_position.set_range(0.0, prop.original_dimension.1);
                 tag_position.set_value(saved_prop.tag_position);
+                quote_position_slider.set_range(0.0, prop.original_dimension.1);
+                quote_position_slider.set_value(saved_prop.quote_position);
+                tag_position_slider.set_range(0.0, prop.original_dimension.1);
+                tag_position_slider.set_value(saved_prop.tag_position);
 
                 prop.quote = saved_prop.quote;
                 prop.tag = saved_prop.tag;
@@ -197,6 +210,10 @@ fn load_image(
             quote_position.set_value(prop.quote_position);
             tag_position.set_range(0.0, prop.original_dimension.1);
             tag_position.set_value(prop.tag_position);
+            quote_position_slider.set_range(0.0, prop.original_dimension.1);
+            quote_position_slider.set_value(prop.quote_position);
+            tag_position_slider.set_range(0.0, prop.original_dimension.1);
+            tag_position_slider.set_value(prop.tag_position);
 
             let glob = &globals::CONFIG.read().unwrap();
             layer_red.set_value(glob.color_layer[0] as f64);

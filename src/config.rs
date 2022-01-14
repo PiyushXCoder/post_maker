@@ -71,9 +71,9 @@ impl Default for ConfigFile {
         Self {
             quote_font_ttf: String::new(),
             tag_font_ttf: String::new(),
-            quote_font_ratio: 259.0,
-            tag_font_ratio: 96.0,
-            color_layer: [25, 29, 34, 190],
+            quote_font_ratio: 215.0,
+            tag_font_ratio: 150.0,
+            color_layer: [20, 22, 25, 192],
         }
     }
 }
