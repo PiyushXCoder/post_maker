@@ -159,11 +159,14 @@ impl ImageContainer {
             None => return,
         };
         let path_conf = path_original.with_extension("conf");
-        let export = path_original
-            .parent()
-            .unwrap()
-            .join("export")
-            .join(path_original.file_name().unwrap().to_str().unwrap());
+        let export = path_original.parent().unwrap().join("export").join(
+            path_original
+                .with_extension("png")
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap(),
+        );
 
         fs::write(&path_conf, serde_json::to_string(&*prop).unwrap()).unwrap();
 
