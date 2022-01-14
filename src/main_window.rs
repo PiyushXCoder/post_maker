@@ -65,9 +65,11 @@ impl MainWindow {
         draw_buff: Arc<RwLock<Vec<u8>>>,
     ) -> Self {
         let mut win = Window::new(0, 0, 1000, 600, "Post Maker").center_screen();
-        if let Ok(image) = SvgImage::from_data(&globals::ICON) {
-            win.set_icon(Some(image));
-        }
+        win.set_icon(Some(
+            SvgImage::from_data(globals::ICON.to_str().unwrap()).unwrap(),
+        ));
+
+        let reload_image = SvgImage::from_data(globals::RELOAD_ICON.to_str().unwrap()).unwrap();
 
         let mut main_flex = Flex::default().size_of_parent().column();
         let menubar = menu::SysMenuBar::default();
@@ -81,7 +83,8 @@ impl MainWindow {
         let save_btn = Button::default().with_label("Save");
         toolbar_flex.set_size(&save_btn, 50);
         let file_choice = menu::Choice::default();
-        let reset_file_choice = Button::default().with_label("@returnarrow");
+        let mut reset_file_choice = Button::default();
+        reset_file_choice.set_image(Some(reload_image.clone()));
         toolbar_flex.set_size(&reset_file_choice, 30);
         toolbar_flex.end();
         main_flex.set_size(&toolbar_flex, 30);
@@ -110,7 +113,8 @@ impl MainWindow {
         Frame::default()
             .with_label("Dark Layer (RGBA):")
             .with_align(enums::Align::Left | enums::Align::Inside);
-        let reset_darklayer_btn = Button::default().with_label("@returnarrow");
+        let mut reset_darklayer_btn = Button::default();
+        reset_darklayer_btn.set_image(Some(reload_image.clone()));
         darklayer_head_flex.set_size(&reset_darklayer_btn, 30);
         darklayer_head_flex.end();
         controls_flex.set_size(&darklayer_head_flex, 30);
@@ -141,13 +145,15 @@ impl MainWindow {
             .with_label("Quote Position:")
             .with_align(enums::Align::Left | enums::Align::Inside);
         let quote_position = fltk::misc::Spinner::default();
-        let reset_quote_position_btn = Button::default().with_label("@returnarrow");
+        let mut reset_quote_position_btn = Button::default();
+        reset_quote_position_btn.set_image(Some(reload_image.clone()));
         quote_position_flex.set_size(&reset_quote_position_btn, 30);
         quote_position_flex.end();
         controls_flex.set_size(&quote_position_flex, 30);
 
         let mut quote_position_slider = Slider::default().with_type(SliderType::HorizontalNice);
         quote_position_slider.set_step(1.0, 1);
+        quote_position_slider.set_frame(enums::FrameType::NoBox);
         controls_flex.set_size(&quote_position_slider, 30);
 
         let mut tag_position_flex = Flex::default().row();
@@ -155,13 +161,15 @@ impl MainWindow {
             .with_label("Tag Position:")
             .with_align(enums::Align::Left | enums::Align::Inside);
         let tag_position = fltk::misc::Spinner::default();
-        let reset_tag_position_btn = Button::default().with_label("@returnarrow");
+        let mut reset_tag_position_btn = Button::default();
+        reset_tag_position_btn.set_image(Some(reload_image.clone()));
         tag_position_flex.set_size(&reset_tag_position_btn, 30);
         tag_position_flex.end();
         controls_flex.set_size(&tag_position_flex, 30);
 
         let mut tag_position_slider = Slider::default().with_type(SliderType::HorizontalNice);
         tag_position_slider.set_step(1.0, 1);
+        tag_position_slider.set_frame(enums::FrameType::NoBox);
         controls_flex.set_size(&tag_position_slider, 30);
 
         let mut actions_flex = Flex::default().row();

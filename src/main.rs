@@ -26,13 +26,7 @@ pub(crate) enum AppMessage {
 fn main() {
     let app = App::default();
 
-    WidgetTheme::new(
-        config::config()
-            .theme
-            .unwrap_or(config::Themes::System)
-            .into(),
-    )
-    .apply();
+    WidgetTheme::new(globals::THEME.clone().into()).apply();
 
     let draw_buff: Arc<RwLock<Vec<u8>>> = Arc::new(RwLock::new(vec![]));
     let (main_sender, main_receiver) = channel::<AppMessage>();

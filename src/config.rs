@@ -15,7 +15,7 @@ pub(crate) struct Args {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ArgEnum)]
-pub(crate) enum Themes {
+pub enum Themes {
     Classic,
     /// Windows 7
     Aero,

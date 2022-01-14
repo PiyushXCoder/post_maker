@@ -40,9 +40,9 @@ pub(crate) struct ConfigWindow {
 impl ConfigWindow {
     pub(crate) fn new() -> Self {
         let mut win = Window::new(0, 0, 500, 300, "Config").center_screen();
-        if let Ok(image) = SvgImage::from_data(&globals::ICON) {
-            win.set_icon(Some(image));
-        }
+        win.set_icon(Some(
+            SvgImage::from_data(globals::ICON.to_str().unwrap()).unwrap(),
+        ));
 
         let mut col = Flex::default().with_size(490, 290).with_pos(5, 5).column();
 

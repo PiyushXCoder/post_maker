@@ -32,9 +32,9 @@ pub(crate) struct Page {
 impl CropWindow {
     pub(crate) fn new() -> Self {
         let mut win = Window::new(0, 0, 500, 600, "Crop").center_screen();
-        if let Ok(image) = SvgImage::from_data(&globals::ICON) {
-            win.set_icon(Some(image));
-        }
+        win.set_icon(Some(
+            SvgImage::from_data(globals::ICON.to_str().unwrap()).unwrap(),
+        ));
 
         let mut main_flex = Flex::default().size_of_parent().column();
 
