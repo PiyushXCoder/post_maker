@@ -258,9 +258,8 @@ fn draw_layer_and_text(
             tmp,
             image::Rgba([255, 255, 255, 255]),
             ((width - text_width) / 2.0) as u32,
-            ((quote_position * height) / original_height
-                + (text_height / 2.0)
-                + index as f64 * (text_height * 1.2)) as u32,
+            ((quote_position * height) / original_height + index as f64 * (text_height * 1.2))
+                as u32,
             rusttype::Scale::uniform(size as f32),
             &globals::FONT_QUOTE,
             line,
@@ -279,9 +278,7 @@ fn draw_layer_and_text(
             tmp,
             image::Rgba([255, 255, 255, 255]),
             (width * 0.99 - text_width) as u32,
-            ((tag_position * height) / original_height
-                + (text_height / 2.0)
-                + index as f64 * (text_height * 1.2)) as u32,
+            ((tag_position * height) / original_height + index as f64 * (text_height * 1.2)) as u32,
             rusttype::Scale::uniform(size as f32),
             &globals::FONT_TAG,
             line,
