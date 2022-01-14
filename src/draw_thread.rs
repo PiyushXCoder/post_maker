@@ -24,10 +24,15 @@ use crate::utils::{ImageContainer, ImageProperties};
 
 #[derive(Debug, Clone)]
 pub(crate) enum DrawMessage {
-    Open, // Open file or cropped file
+    /// Open file or cropped file
+    Open,
+    /// Load file with specific cropped size
     ChangeCrop((f64, f64)),
+    /// Recalculate and draw on buffer image in Container
     Recalc,
+    /// Flush buffer to u8 vector present in main, to draw on screen
     Flush,
+    /// Save to file
     Save,
 }
 

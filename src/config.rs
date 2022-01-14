@@ -1,3 +1,5 @@
+//! load, save configuration and parse cli args
+
 use clap::{ArgEnum, Parser};
 use fltk::dialog;
 use fltk_theme::ThemeType;
@@ -57,6 +59,7 @@ impl Into<ThemeType> for Themes {
     }
 }
 
+/// Configuation file
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConfigFile {
     pub quote_font_ttf: String,

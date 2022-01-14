@@ -1,3 +1,5 @@
+//! Window to edit configuration
+
 use std::{cell::RefCell, rc::Rc};
 
 use fltk::{
