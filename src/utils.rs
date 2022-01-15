@@ -218,15 +218,15 @@ impl ImageContainer {
                 .unwrap(),
         );
 
-        if path_original.exists() && trash::delete(path_original).is_err() {
+        if path_original.exists() && fs::remove_file(path_original).is_err() {
             dialog::message_default("Failed to delete image!");
         }
 
-        if path_conf.exists() && trash::delete(path_conf).is_err() {
+        if path_conf.exists() && fs::remove_file(path_conf).is_err() {
             dialog::message_default("Failed to delete image conf!");
         }
 
-        if export.exists() && trash::delete(export).is_err() {
+        if export.exists() && fs::remove_file(export).is_err() {
             dialog::message_default("Failed to delete exported image!");
         }
     }
