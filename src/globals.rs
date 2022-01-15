@@ -32,7 +32,7 @@ lazy_static! {
     pub static ref ICON: OsString = include_str!("../icon.svg").into();
     pub static ref RELOAD_ICON: OsString = {
         let img = include_str!("../reload.svg");
-        if let config::Themes::Dark = *THEME {
+        if *THEME == config::Themes::Dark || *THEME == config::Themes::HighContrast {
             return img.replace("fill=\"black\"", "fill=\"white\"").into();
         }
         img.into()
