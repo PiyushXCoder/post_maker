@@ -168,7 +168,7 @@ impl ImageContainer {
                 .unwrap(),
         );
 
-        if let Err(_) = fs::write(&path_conf, serde_json::to_string(&*prop).unwrap()) {
+        if fs::write(&path_conf, serde_json::to_string(&*prop).unwrap()).is_err() {
             dialog::message_default("Failed to save conf!");
         }
 
@@ -193,8 +193,41 @@ impl ImageContainer {
             prop.original_dimension.1,
         );
 
-        if let Err(_) = img.save_with_format(&export, image::ImageFormat::Png) {
+        if img
+            .save_with_format(&export, image::ImageFormat::Png)
+            .is_err()
+        {
             dialog::message_default("Failed to export png!");
+        }
+    }
+
+    pub(crate) fn delete(&self) {
+        let prop = self.properties.read().unwrap();
+
+        let path_original = match &prop.path {
+            Some(p) => Path::new(p),
+            None => return,
+        };
+        let path_conf = path_original.with_extension("conf");
+        let export = path_original.parent().unwrap().join("export").join(
+            path_original
+                .with_extension("png")
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap(),
+        );
+
+        if path_original.exists() && trash::delete(path_original).is_err() {
+            dialog::message_default("Failed to delete image!");
+        }
+
+        if path_conf.exists() && trash::delete(path_conf).is_err() {
+            dialog::message_default("Failed to delete image conf!");
+        }
+
+        if export.exists() && trash::delete(export).is_err() {
+            dialog::message_default("Failed to delete exported image!");
         }
     }
 }

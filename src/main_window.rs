@@ -2,6 +2,7 @@ use crate::crop_window::CropWindow;
 use crate::draw_thread::*;
 use crate::utils::ImageProperties;
 use crate::{config_window::ConfigWindow, globals};
+use fltk::dialog;
 use fltk::valuator::{Slider, SliderType};
 use fltk::{
     app,
@@ -44,10 +45,11 @@ pub(crate) struct MainWindow {
     pub(crate) reset_tag_position_btn: Button,
     pub(crate) reset_file_choice: Button,
     pub(crate) crop_btn: Button,
+    pub(crate) delete_btn: Button,
     pub(crate) status: Frame,
     pub(crate) page: Page,
     pub(crate) images_path: Arc<RwLock<Vec<PathBuf>>>,
-    pub(crate) draw_buff: Arc<RwLock<Vec<u8>>>,
+    pub(crate) draw_buff: Arc<RwLock<Option<Vec<u8>>>>,
     pub(crate) properties: Arc<RwLock<ImageProperties>>,
     pub(crate) sender: mpsc::Sender<DrawMessage>,
 }
@@ -62,7 +64,7 @@ pub(crate) struct Page {
 impl MainWindow {
     pub(crate) fn new(
         sender: app::Sender<crate::AppMessage>,
-        draw_buff: Arc<RwLock<Vec<u8>>>,
+        draw_buff: Arc<RwLock<Option<Vec<u8>>>>,
     ) -> Self {
         let mut win = Window::new(0, 0, 1000, 600, "Post Maker").center_screen();
         win.set_icon(Some(
@@ -174,6 +176,8 @@ impl MainWindow {
 
         let mut actions_flex = Flex::default().row();
         Frame::default();
+        let delete_btn = Button::default().with_label("Delete");
+        actions_flex.set_size(&delete_btn, 100);
         let crop_btn = Button::default().with_label("Crop");
         actions_flex.set_size(&crop_btn, 100);
         Frame::default();
@@ -232,6 +236,7 @@ impl MainWindow {
             reset_tag_position_btn,
             reset_file_choice,
             crop_btn,
+            delete_btn,
             status,
             images_path: Arc::new(RwLock::new(vec![])),
             draw_buff,
@@ -312,16 +317,17 @@ impl MainWindow {
         let properties = Arc::clone(&self.properties);
         self.page.image.draw(move |f| {
             let (width, height) = properties.read().unwrap().dimension;
-            let image = &*buff.read().unwrap();
-            dr::draw_image(
-                &image,
-                f.x(),
-                f.y(),
-                width as i32,
-                height as i32,
-                enums::ColorDepth::Rgb8,
-            )
-            .unwrap();
+            if let Some(image) = &*buff.read().unwrap() {
+                dr::draw_image(
+                    &image,
+                    f.x(),
+                    f.y(),
+                    width as i32,
+                    height as i32,
+                    enums::ColorDepth::Rgb8,
+                )
+                .unwrap();
+            }
         })
     }
 
@@ -402,6 +408,19 @@ impl MainWindow {
             let mut prop = properties.write().unwrap();
             prop.is_saved = true;
             sender.send(DrawMessage::Save).unwrap()
+        });
+
+        let mut image = self.page.image.clone();
+        let mut file_choice = self.file_choice.clone();
+        let sender = self.sender.clone();
+        self.delete_btn.set_callback(move |_| {
+            let ch = dialog::choice_default("Do you want to delete??", "Yes", "No", "");
+            if ch == 0 {
+                sender.send(DrawMessage::Delete).unwrap();
+                sender.send(DrawMessage::Open).unwrap();
+                image.redraw();
+                file_choice.redraw();
+            }
         });
 
         let properties = Arc::clone(&self.properties);

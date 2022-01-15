@@ -34,6 +34,8 @@ pub(crate) enum DrawMessage {
     Flush,
     /// Save to file
     Save,
+    /// Delete file
+    Delete,
 }
 
 pub(crate) fn spawn_image_thread(
@@ -130,6 +132,23 @@ pub(crate) fn spawn_image_thread(
                         status.set_label("");
                     }
                 }
+                DrawMessage::Delete => {
+                    if let Some(cont) = &mut _container {
+                        status.set_label("Deleting to trash...");
+                        cont.delete();
+                        images_path
+                            .write()
+                            .unwrap()
+                            .remove(file_choice.value() as usize);
+                        file_choice.remove(file_choice.value());
+                        if file_choice.value() > 0 {
+                            file_choice.set_value(file_choice.value() - 1);
+                        } else {
+                            file_choice.set_value(0);
+                        }
+                        status.set_label("");
+                    }
+                }
             }
         }
     });
@@ -155,6 +174,11 @@ fn load_image(
     container: &mut Option<ImageContainer>,
 ) {
     let imgs = images_path.read().unwrap();
+    if imgs.len() == 0 {
+        *container = None;
+        flush_buffer(app_sender, container);
+        return;
+    }
     let file = imgs.get(file_choice.value() as usize).unwrap();
 
     *container = Some(ImageContainer::new(&file, Arc::clone(properties)));
@@ -253,9 +277,14 @@ fn load_image(
 }
 
 fn flush_buffer(app_sender: &app::Sender<crate::AppMessage>, container: &Option<ImageContainer>) {
-    if let Some(cont) = container {
-        app_sender.send(AppMessage::RedrawMainWindowImage(
-            cont.buffer.as_rgb8().unwrap().as_raw().to_owned(),
-        ));
+    match container {
+        Some(cont) => {
+            app_sender.send(AppMessage::RedrawMainWindowImage(Some(
+                cont.buffer.as_rgb8().unwrap().as_raw().to_owned(),
+            )));
+        }
+        None => {
+            app_sender.send(AppMessage::RedrawMainWindowImage(None));
+        }
     }
 }

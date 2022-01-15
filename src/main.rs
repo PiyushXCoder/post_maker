@@ -20,7 +20,7 @@ use std::sync::{Arc, RwLock};
 
 #[derive(Clone, Debug)]
 pub(crate) enum AppMessage {
-    RedrawMainWindowImage(Vec<u8>),
+    RedrawMainWindowImage(Option<Vec<u8>>),
 }
 
 fn main() {
@@ -28,7 +28,7 @@ fn main() {
 
     WidgetTheme::new(globals::THEME.clone().into()).apply();
 
-    let draw_buff: Arc<RwLock<Vec<u8>>> = Arc::new(RwLock::new(vec![]));
+    let draw_buff: Arc<RwLock<Option<Vec<u8>>>> = Arc::new(RwLock::new(None));
     let (main_sender, main_receiver) = channel::<AppMessage>();
     let mut main_window = MainWindow::new(main_sender, Arc::clone(&draw_buff));
 
