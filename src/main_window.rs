@@ -637,12 +637,15 @@ fn load_dir(
     file_choice: &mut menu::Choice,
     sender: &mpsc::Sender<DrawMessage>,
 ) {
-    let files = fs::read_dir(path).unwrap();
+    let mut files = fs::read_dir(path)
+        .unwrap()
+        .map(|r| r.unwrap())
+        .collect::<Vec<fs::DirEntry>>();
+    files.sort_by_key(|i| i.file_name());
     let mut text = String::new();
     let mut imgs_b = imgs.write().unwrap();
     *imgs_b = vec![];
     for file in files {
-        let file = file.unwrap();
         let path = file.path();
         if path.extension() == Some(OsStr::new("jpg"))
             || path.extension() == Some(OsStr::new("png"))
