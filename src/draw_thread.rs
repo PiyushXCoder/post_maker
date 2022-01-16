@@ -71,7 +71,6 @@ pub(crate) fn spawn_image_thread(
             match val {
                 DrawMessage::Open => {
                     status.set_label("Loading...");
-                    // win.deactivate();
                     load_image(
                         &mut file_choice,
                         Arc::clone(&images_path),
@@ -93,13 +92,11 @@ pub(crate) fn spawn_image_thread(
                         &properties,
                         &mut _container,
                     );
-                    // win.activate();
                     status.set_label("");
                     status.set_label("");
                 }
                 DrawMessage::ChangeCrop((x, y)) => {
                     status.set_label("Loading...");
-                    // win.deactivate();
                     load_image(
                         &mut file_choice,
                         Arc::clone(&images_path),
@@ -121,7 +118,6 @@ pub(crate) fn spawn_image_thread(
                         &properties,
                         &mut _container,
                     );
-                    // win.activate();
                     status.set_label("");
                 }
                 DrawMessage::Recalc => {
