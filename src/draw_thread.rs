@@ -6,7 +6,8 @@ use crate::{
     AppMessage,
 };
 use fltk::{
-    app,
+    app, enums,
+    frame::Frame,
     input::{Input, MultilineInput},
     menu,
     misc::Spinner,
@@ -34,6 +35,8 @@ pub(crate) enum DrawMessage {
     Flush,
     /// Save to file
     Save,
+    /// Clone file
+    Clone,
     /// Delete file
     Delete,
 }
@@ -59,6 +62,8 @@ pub(crate) fn spawn_image_thread(
     let mut tag_position_slider = main_win.tag_position_slider.clone();
     let mut page = main_win.page.clone();
     let mut status = main_win.status.clone();
+    let mut count = main_win.count.clone();
+    let mut dimension = main_win.dimension.clone();
     let images_path = Arc::clone(&main_win.images_path);
 
     let mut _container: Option<ImageContainer> = None;
@@ -82,6 +87,8 @@ pub(crate) fn spawn_image_thread(
                         &mut quote_position_slider,
                         &mut tag_position_slider,
                         &mut page,
+                        &mut count,
+                        &mut dimension,
                         &app_sender,
                         &properties,
                         &mut _container,
@@ -108,6 +115,8 @@ pub(crate) fn spawn_image_thread(
                         &mut quote_position_slider,
                         &mut tag_position_slider,
                         &mut page,
+                        &mut count,
+                        &mut dimension,
                         &app_sender,
                         &properties,
                         &mut _container,
@@ -129,6 +138,25 @@ pub(crate) fn spawn_image_thread(
                     if let Some(cont) = &mut _container {
                         status.set_label("Saving...");
                         cont.save();
+                        status.set_label("");
+                    }
+                }
+                DrawMessage::Clone => {
+                    if let Some(cont) = &mut _container {
+                        status.set_label("Cloning...");
+                        if let Some(path) = cont.clone_img() {
+                            images_path
+                                .write()
+                                .unwrap()
+                                .insert(file_choice.value() as usize, path.clone());
+                            file_choice.insert(
+                                file_choice.value(),
+                                path.file_name().unwrap().to_str().unwrap(),
+                                enums::Shortcut::None,
+                                menu::MenuFlag::Normal,
+                                |_| {},
+                            );
+                        }
                         status.set_label("");
                     }
                 }
@@ -169,6 +197,8 @@ fn load_image(
     quote_position_slider: &mut Slider,
     tag_position_slider: &mut Slider,
     page: &mut Page,
+    count: &mut Frame,
+    dimension: &mut Frame,
     app_sender: &app::Sender<crate::AppMessage>,
     properties: &Arc<RwLock<ImageProperties>>,
     container: &mut Option<ImageContainer>,
@@ -179,6 +209,7 @@ fn load_image(
         flush_buffer(app_sender, container);
         return;
     }
+    count.set_label(&format!("[{}/{}]", file_choice.value() + 1, imgs.len()));
     let file = imgs.get(file_choice.value() as usize).unwrap();
 
     *container = Some(ImageContainer::new(&file, Arc::clone(properties)));
@@ -207,6 +238,10 @@ fn load_image(
                 quote_position_slider.set_value(saved_prop.quote_position);
                 tag_position_slider.set_range(0.0, prop.original_dimension.1);
                 tag_position_slider.set_value(saved_prop.tag_position);
+                dimension.set_label(&format!(
+                    "[{}x{}]",
+                    prop.original_dimension.0, prop.original_dimension.1
+                ));
 
                 prop.quote = saved_prop.quote;
                 prop.tag = saved_prop.tag;

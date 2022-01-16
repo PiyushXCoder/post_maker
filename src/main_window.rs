@@ -45,8 +45,11 @@ pub(crate) struct MainWindow {
     pub(crate) reset_tag_position_btn: Button,
     pub(crate) reset_file_choice: Button,
     pub(crate) crop_btn: Button,
+    pub(crate) clone_btn: Button,
     pub(crate) delete_btn: Button,
     pub(crate) status: Frame,
+    pub(crate) count: Frame,
+    pub(crate) dimension: Frame,
     pub(crate) page: Page,
     pub(crate) images_path: Arc<RwLock<Vec<PathBuf>>>,
     pub(crate) draw_buff: Arc<RwLock<Option<Vec<u8>>>>,
@@ -66,7 +69,7 @@ impl MainWindow {
         sender: app::Sender<crate::AppMessage>,
         draw_buff: Arc<RwLock<Option<Vec<u8>>>>,
     ) -> Self {
-        let mut win = Window::new(0, 0, 1000, 600, "Post Maker").center_screen();
+        let mut win = Window::new(0, 0, 1000, 650, "Post Maker").center_screen();
         win.set_icon(Some(
             SvgImage::from_data(globals::ICON.to_str().unwrap()).unwrap(),
         ));
@@ -178,6 +181,8 @@ impl MainWindow {
         Frame::default();
         let delete_btn = Button::default().with_label("Delete");
         actions_flex.set_size(&delete_btn, 100);
+        let clone_btn = Button::default().with_label("Clone");
+        actions_flex.set_size(&clone_btn, 100);
         let crop_btn = Button::default().with_label("Crop");
         actions_flex.set_size(&crop_btn, 100);
         Frame::default();
@@ -186,8 +191,12 @@ impl MainWindow {
 
         Frame::default();
 
+        let info_flex = Flex::default().row();
+        let count = Frame::default().with_align(enums::Align::Left | enums::Align::Inside);
         let status = Frame::default();
-        controls_flex.set_size(&status, 30);
+        let dimension = Frame::default().with_align(enums::Align::Right | enums::Align::Inside);
+        info_flex.end();
+        controls_flex.set_size(&info_flex, 30);
 
         controls_flex.end();
         workspace_flex.set_size(&controls_flex, 360);
@@ -204,6 +213,7 @@ impl MainWindow {
         Frame::default();
         center_row_flex.set_size(&center_col_flex, 400);
         center_row_flex.end();
+
         workspace_flex.end();
 
         main_flex.end();
@@ -236,8 +246,11 @@ impl MainWindow {
             reset_tag_position_btn,
             reset_file_choice,
             crop_btn,
+            clone_btn,
             delete_btn,
             status,
+            count,
+            dimension,
             images_path: Arc::new(RwLock::new(vec![])),
             draw_buff,
             properties: Arc::clone(&properties),
@@ -308,6 +321,17 @@ impl MainWindow {
                     sender.send(DrawMessage::Flush).unwrap();
                     image.redraw();
                 }
+            },
+        );
+
+        self.menubar.add(
+            "&Help/About...\t",
+            Shortcut::None,
+            menu::MenuFlag::Normal,
+            move |_| {
+                dialog::message_default(
+                    "Created with <3 by PiyushXCoder\nhttps://github.com/PiyushXCoder",
+                );
             },
         );
     }
@@ -408,6 +432,19 @@ impl MainWindow {
             let mut prop = properties.write().unwrap();
             prop.is_saved = true;
             sender.send(DrawMessage::Save).unwrap()
+        });
+
+        let mut image = self.page.image.clone();
+        let mut file_choice = self.file_choice.clone();
+        let sender = self.sender.clone();
+        self.clone_btn.set_callback(move |_| {
+            let ch = dialog::choice_default("Do you want to clone??", "Yes", "No", "");
+            if ch == 0 {
+                sender.send(DrawMessage::Clone).unwrap();
+                sender.send(DrawMessage::Open).unwrap();
+                image.redraw();
+                file_choice.redraw();
+            }
         });
 
         let mut image = self.page.image.clone();

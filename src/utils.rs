@@ -201,6 +201,32 @@ impl ImageContainer {
         }
     }
 
+    pub(crate) fn clone_img(&self) -> Option<PathBuf> {
+        let prop = self.properties.read().unwrap();
+
+        match &prop.path {
+            Some(path) => {
+                let name = path.file_stem().unwrap().to_string_lossy();
+                let ext = path.extension().unwrap().to_string_lossy();
+                let new_file = format!("{}_copy.{}", name, ext);
+                let new_path = path.with_file_name(&new_file);
+                let path_conf = path.with_extension("conf");
+                let path_conf_new = new_path.with_extension("conf");
+
+                if fs::copy(path, &new_path).is_err() {
+                    dialog::message_default("Failed to clone image!");
+                    return None;
+                }
+
+                if fs::copy(path_conf, &path_conf_new).is_err() {
+                    dialog::message_default("Failed to clone image conf!");
+                }
+                Some(new_path)
+            }
+            None => None,
+        }
+    }
+
     pub(crate) fn delete(&self) {
         let prop = self.properties.read().unwrap();
 
