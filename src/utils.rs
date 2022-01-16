@@ -168,7 +168,9 @@ impl ImageContainer {
                 .unwrap(),
         );
 
-        if fs::write(&path_conf, serde_json::to_string(&*prop).unwrap()).is_err() {
+        let mut prop = prop.clone();
+        prop.path = None;
+        if fs::write(&path_conf, serde_json::to_string(&prop).unwrap()).is_err() {
             dialog::message_default("Failed to save conf!");
         }
 
@@ -265,7 +267,7 @@ impl ImageContainer {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct ImageProperties {
     pub(crate) path: Option<PathBuf>,
     pub(crate) dimension: (f64, f64),
