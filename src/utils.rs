@@ -208,18 +208,25 @@ impl ImageContainer {
             Some(path) => {
                 let name = path.file_stem().unwrap().to_string_lossy();
                 let ext = path.extension().unwrap().to_string_lossy();
-                let new_file = format!("{}_copy.{}", name, ext);
-                let new_path = path.with_file_name(&new_file);
+                let mut i = 1;
+                let mut new_path = path.clone();
+                while new_path.exists() {
+                    let new_file = format!("{}{}.{}", name, "-copy".repeat(i), ext);
+                    new_path = path.with_file_name(&new_file);
+                    i += 1;
+                }
+
                 let path_conf = path.with_extension("conf");
                 let path_conf_new = new_path.with_extension("conf");
 
-                if fs::copy(path, &new_path).is_err() {
+                if path.exists() && fs::copy(path, &new_path).is_err() {
                     dialog::message_default("Failed to clone image!");
                     return None;
                 }
 
-                if fs::copy(path_conf, &path_conf_new).is_err() {
-                    dialog::message_default("Failed to clone image conf!");
+                if path_conf.exists() && fs::copy(path_conf, &path_conf_new).is_err() {
+                    dialog::message_default("Failed to clone image!");
+                    return None;
                 }
                 Some(new_path)
             }

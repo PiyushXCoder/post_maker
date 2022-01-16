@@ -47,9 +47,8 @@ pub(crate) fn spawn_image_thread(
     properties: Arc<RwLock<ImageProperties>>,
     main_win: &MainWindow,
 ) {
+    let mut win = main_win.win.clone();
     let mut file_choice = main_win.file_choice.clone();
-    let mut next_btn = main_win.next_btn.clone();
-    let mut back_btn = main_win.back_btn.clone();
     let mut quote = main_win.quote.clone();
     let mut tag = main_win.tag.clone();
     let mut layer_red = main_win.layer_red.clone();
@@ -72,6 +71,7 @@ pub(crate) fn spawn_image_thread(
             match val {
                 DrawMessage::Open => {
                     status.set_label("Loading...");
+                    // win.deactivate();
                     load_image(
                         &mut file_choice,
                         Arc::clone(&images_path),
@@ -93,13 +93,13 @@ pub(crate) fn spawn_image_thread(
                         &properties,
                         &mut _container,
                     );
+                    // win.activate();
+                    status.set_label("");
                     status.set_label("");
                 }
                 DrawMessage::ChangeCrop((x, y)) => {
                     status.set_label("Loading...");
-                    file_choice.deactivate();
-                    next_btn.deactivate();
-                    back_btn.deactivate();
+                    // win.deactivate();
                     load_image(
                         &mut file_choice,
                         Arc::clone(&images_path),
@@ -121,9 +121,7 @@ pub(crate) fn spawn_image_thread(
                         &properties,
                         &mut _container,
                     );
-                    file_choice.activate();
-                    next_btn.activate();
-                    back_btn.activate();
+                    // win.activate();
                     status.set_label("");
                 }
                 DrawMessage::Recalc => {
@@ -137,44 +135,48 @@ pub(crate) fn spawn_image_thread(
                 DrawMessage::Save => {
                     if let Some(cont) = &mut _container {
                         status.set_label("Saving...");
+                        win.deactivate();
                         cont.save();
+                        win.activate();
                         status.set_label("");
                     }
                 }
                 DrawMessage::Clone => {
                     if let Some(cont) = &mut _container {
                         status.set_label("Cloning...");
+                        win.deactivate();
                         if let Some(path) = cont.clone_img() {
-                            images_path
-                                .write()
-                                .unwrap()
-                                .insert(file_choice.value() as usize, path.clone());
+                            let idx = file_choice.value();
+                            let mut imgs = images_path.write().unwrap();
+                            imgs.insert(idx as usize, path.clone());
                             file_choice.insert(
-                                file_choice.value(),
+                                idx,
                                 path.file_name().unwrap().to_str().unwrap(),
                                 enums::Shortcut::None,
                                 menu::MenuFlag::Normal,
-                                |_| {},
+                                |a| a.do_callback(),
                             );
+                            file_choice.set_value(idx);
                         }
                         status.set_label("");
+                        win.activate();
                     }
                 }
                 DrawMessage::Delete => {
                     if let Some(cont) = &mut _container {
-                        status.set_label("Deleting to trash...");
+                        status.set_label("Deleting...");
+                        win.deactivate();
                         cont.delete();
-                        images_path
-                            .write()
-                            .unwrap()
-                            .remove(file_choice.value() as usize);
+                        let mut imgs = images_path.write().unwrap();
+                        imgs.remove(file_choice.value() as usize);
                         file_choice.remove(file_choice.value());
-                        if file_choice.value() > 0 {
-                            file_choice.set_value(file_choice.value() - 1);
+                        if file_choice.value() != imgs.len() as i32 {
+                            file_choice.set_value(file_choice.value());
                         } else {
-                            file_choice.set_value(0);
+                            file_choice.set_value(file_choice.value() - 1);
                         }
                         status.set_label("");
+                        win.activate();
                     }
                 }
             }
