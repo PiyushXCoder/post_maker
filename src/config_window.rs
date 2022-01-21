@@ -262,6 +262,9 @@ impl ConfigWindow {
                 tag_font_ttf: tag_font_ttf.value(),
                 quote_font_ratio: quote_font_ratio.value(),
                 tag_font_ratio: tag_font_ratio.value(),
+                quote_position_ratio: *globals::QUOTE_POSITION_RATIO.read().unwrap(),
+                tag_position_ratio: *globals::TAG_POSITION_RATIO.read().unwrap(),
+                image_ratio: *globals::IMAGE_RATIO.read().unwrap(),
                 color_layer: [
                     layer_red.value() as u8,
                     layer_green.value() as u8,

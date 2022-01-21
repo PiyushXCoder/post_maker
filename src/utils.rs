@@ -72,8 +72,8 @@ impl ImageContainer {
         let mut prop = properties.write().unwrap();
         prop.path = Some(path.to_owned());
         prop.original_dimension = (width, height);
-        prop.quote_position = (height * 2.0) / 3.0;
-        prop.tag_position = height / 2.0;
+        prop.quote_position = height * &*globals::QUOTE_POSITION_RATIO.read().unwrap();
+        prop.tag_position = height * &*globals::TAG_POSITION_RATIO.read().unwrap();
 
         Self {
             image: img.clone(),
@@ -96,14 +96,15 @@ impl ImageContainer {
     pub(crate) fn apply_crop(&mut self) {
         let mut prop = self.properties.write().unwrap();
         let (original_width, original_height) = prop.original_dimension;
-        let (origina_crop_width, origina_crop_height) = get_4_5(original_width, original_height);
+        let (origina_crop_width, origina_crop_height) =
+            croped_ratio(original_width, original_height);
         prop.crop_position = Some((
             original_width / 2.0 - origina_crop_width / 2.0,
             original_height / 2.0 - origina_crop_height / 2.0,
         ));
 
         let (s_width, s_height): (f64, f64) = Coord::from(self.image.dimensions()).into();
-        let (c_width, c_height) = get_4_5(s_width, s_height);
+        let (c_width, c_height) = croped_ratio(s_width, s_height);
         let (cx, cy) = ((s_width - c_width) / 2.0, (s_height - c_height) / 2.0);
 
         prop.dimension = (c_width, c_height);
@@ -120,7 +121,7 @@ impl ImageContainer {
         prop.crop_position = Some((original_x, original_y));
 
         let (s_width, s_height): (f64, f64) = Coord::from(self.image.dimensions()).into();
-        let (c_width, c_height) = get_4_5(s_width, s_height);
+        let (c_width, c_height) = croped_ratio(s_width, s_height);
         let (cx, cy) = (
             (original_x * s_width) / original_width,
             (original_y * s_height) / original_height,
@@ -177,7 +178,7 @@ impl ImageContainer {
         let mut img = image::open(&path_original).unwrap();
         let (width, height): (f64, f64) = Coord::from(img.dimensions()).into();
         let (crop_x, crop_y) = prop.crop_position.unwrap();
-        let (crop_width, crop_height) = get_4_5(width, height);
+        let (crop_width, crop_height) = croped_ratio(width, height);
         let mut img = img.crop(
             crop_x as u32,
             crop_y as u32,
@@ -354,7 +355,7 @@ fn draw_layer_and_text(
     }
 }
 
-pub(crate) fn get_4_5(width: f64, height: f64) -> (f64, f64) {
+pub(crate) fn croped_ratio(width: f64, height: f64) -> (f64, f64) {
     if width > width_from_height(height) {
         (width_from_height(height), height)
     } else {
@@ -363,11 +364,13 @@ pub(crate) fn get_4_5(width: f64, height: f64) -> (f64, f64) {
 }
 
 pub(crate) fn width_from_height(height: f64) -> f64 {
-    (4.0 * height) / 5.0
+    let (w, h) = &*globals::IMAGE_RATIO.read().unwrap();
+    (w * height) / h
 }
 
 pub(crate) fn height_from_width(width: f64) -> f64 {
-    (5.0 * width) / 4.0
+    let (w, h) = &*globals::IMAGE_RATIO.read().unwrap();
+    (h * width) / w
 }
 
 pub(crate) fn quote_from_height(height: f64) -> f64 {

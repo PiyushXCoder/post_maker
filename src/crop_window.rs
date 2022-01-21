@@ -153,7 +153,8 @@ impl CropWindow {
                 let (original_width, original_height) = prop.original_dimension;
                 let (original_x, original_y) = prop.crop_position.unwrap();
                 let (resized_width, resized_height) = (image.width() as f64, image.height() as f64);
-                let (bound_width, bound_height) = utils::get_4_5(resized_width, resized_height);
+                let (bound_width, bound_height) =
+                    utils::croped_ratio(resized_width, resized_height);
 
                 let (bound_x, bound_y) = (
                     (original_x * resized_width as f64) / original_width,
@@ -183,7 +184,7 @@ impl CropWindow {
                 let (original_x, original_y) = prop.crop_position.unwrap();
                 let (original_width, original_heigth) = prop.original_dimension;
                 let (original_bound_width, original_bound_height) =
-                    utils::get_4_5(original_width, original_heigth);
+                    utils::croped_ratio(original_width, original_heigth);
                 let point = original_width / image.width() as f64;
                 let (event_x, event_y) = (
                     (app::event_x() - f.x()) as f64 * point,

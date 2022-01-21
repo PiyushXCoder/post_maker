@@ -5,7 +5,14 @@ use std::{ffi::OsString, io::Read, sync::RwLock};
 
 lazy_static! {
     pub static ref THEME: config::Themes = config::config().theme.unwrap_or(config::Themes::System);
+    pub static ref CONFIG_NAME: RwLock<String> = RwLock::new("default".to_owned());
     pub static ref CONFIG: RwLock<config::ConfigFile> = RwLock::new(config::ConfigFile::load());
+    pub static ref IMAGE_RATIO: RwLock<(f64, f64)> =
+        RwLock::new(CONFIG.read().unwrap().image_ratio);
+    pub static ref QUOTE_POSITION_RATIO: RwLock<f64> =
+        RwLock::new(CONFIG.read().unwrap().quote_position_ratio);
+    pub static ref TAG_POSITION_RATIO: RwLock<f64> =
+        RwLock::new(CONFIG.read().unwrap().tag_position_ratio);
     pub static ref FONT_QUOTE: Font<'static> = {
         let mut buffer = Vec::new();
         if let Ok(mut file) = std::fs::File::open(CONFIG.read().unwrap().quote_font_ttf.as_str()) {
