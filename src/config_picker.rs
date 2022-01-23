@@ -26,6 +26,11 @@ impl ConfigPicker {
 
         let mut main_flex = Flex::default().size_of_parent().column();
 
+        main_flex.set_size(
+            &Frame::default().with_label("Pick a configutation to use"),
+            40,
+        );
+
         // Work area
         let mut browse = Browser::default().with_type(BrowserType::Hold);
         for name in &configs {
