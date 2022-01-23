@@ -287,7 +287,7 @@ impl MainWindow {
                 let expost_dir = path.join("export");
                 if !expost_dir.exists() {
                     if let Err(_) = fs::create_dir(expost_dir) {
-                        fltk::dialog::message_default("Failed: Readonly folder!");
+                        fltk::dialog::alert_default("Failed: create export folder!");
                         return;
                     }
                 }
@@ -329,7 +329,7 @@ impl MainWindow {
             Shortcut::None,
             menu::MenuFlag::Normal,
             move |_| {
-                dialog::message_default(
+                dialog::alert_default(
                     "Created with <3 by PiyushXCoder\nhttps://github.com/PiyushXCoder",
                 );
             },

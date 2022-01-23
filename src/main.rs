@@ -1,6 +1,7 @@
 #![windows_subsystem = "windows"]
 
 mod config;
+mod config_picker;
 mod config_window;
 mod crop_window;
 mod draw_thread;
@@ -25,8 +26,8 @@ pub(crate) enum AppMessage {
 
 fn main() {
     let app = App::default();
-
     WidgetTheme::new(globals::THEME.clone().into()).apply();
+    lazy_static::initialize(&globals::CONFIG);
 
     let draw_buff: Arc<RwLock<Option<Vec<u8>>>> = Arc::new(RwLock::new(None));
     let (main_sender, main_receiver) = channel::<AppMessage>();

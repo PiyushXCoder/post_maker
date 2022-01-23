@@ -60,7 +60,7 @@ impl ImageContainer {
         let img = match image::open(path) {
             Ok(i) => i,
             Err(_) => {
-                dialog::message_default("Failed to open image");
+                dialog::alert_default("Failed to open image!");
                 panic!("Failed to open image");
             }
         };
@@ -69,11 +69,12 @@ impl ImageContainer {
         let (width, height): (f64, f64) = Coord::from(img.dimensions()).into();
         let (width, height) = (width, height);
 
+        let config = globals::CONFIG.read().unwrap();
         let mut prop = properties.write().unwrap();
         prop.path = Some(path.to_owned());
         prop.original_dimension = (width, height);
-        prop.quote_position = height * &*globals::QUOTE_POSITION_RATIO.read().unwrap();
-        prop.tag_position = height * &*globals::TAG_POSITION_RATIO.read().unwrap();
+        prop.quote_position = height * config.quote_position_ratio;
+        prop.tag_position = height * config.tag_position_ratio;
 
         Self {
             image: img.clone(),
@@ -172,7 +173,7 @@ impl ImageContainer {
         let mut prop = prop.clone();
         prop.path = None;
         if fs::write(&path_conf, serde_json::to_string(&prop).unwrap()).is_err() {
-            dialog::message_default("Failed to save conf!");
+            dialog::alert_default("Failed to save conf!");
         }
 
         let mut img = image::open(&path_original).unwrap();
@@ -200,7 +201,7 @@ impl ImageContainer {
             .save_with_format(&export, image::ImageFormat::Png)
             .is_err()
         {
-            dialog::message_default("Failed to export png!");
+            dialog::alert_default("Failed to export png!");
         }
     }
 
@@ -223,12 +224,12 @@ impl ImageContainer {
                 let path_conf_new = new_path.with_extension("conf");
 
                 if path.exists() && fs::copy(path, &new_path).is_err() {
-                    dialog::message_default("Failed to clone image!");
+                    dialog::alert_default("Failed to clone image!");
                     return None;
                 }
 
                 if path_conf.exists() && fs::copy(path_conf, &path_conf_new).is_err() {
-                    dialog::message_default("Failed to clone image!");
+                    dialog::alert_default("Failed to clone image!");
                     return None;
                 }
                 Some(new_path)
@@ -255,15 +256,15 @@ impl ImageContainer {
         );
 
         if path_original.exists() && fs::remove_file(path_original).is_err() {
-            dialog::message_default("Failed to delete image!");
+            dialog::alert_default("Failed to delete image!");
         }
 
         if path_conf.exists() && fs::remove_file(path_conf).is_err() {
-            dialog::message_default("Failed to delete image conf!");
+            dialog::alert_default("Failed to delete image conf!");
         }
 
         if export.exists() && fs::remove_file(export).is_err() {
-            dialog::message_default("Failed to delete exported image!");
+            dialog::alert_default("Failed to delete exported image!");
         }
     }
 }
@@ -364,12 +365,12 @@ pub(crate) fn croped_ratio(width: f64, height: f64) -> (f64, f64) {
 }
 
 pub(crate) fn width_from_height(height: f64) -> f64 {
-    let (w, h) = &*globals::IMAGE_RATIO.read().unwrap();
+    let (w, h) = globals::CONFIG.read().unwrap().image_ratio;
     (w * height) / h
 }
 
 pub(crate) fn height_from_width(width: f64) -> f64 {
-    let (w, h) = &*globals::IMAGE_RATIO.read().unwrap();
+    let (w, h) = globals::CONFIG.read().unwrap().image_ratio;
     (h * width) / w
 }
 

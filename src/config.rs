@@ -1,13 +1,25 @@
 //! load, save configuration and parse cli args
 
-use std::collections::HashMap;
-
+use crate::{config_picker::ConfigPicker, globals};
 use clap::{ArgEnum, Parser};
 use fltk::dialog;
 use fltk_theme::ThemeType;
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, path::PathBuf};
 
-use crate::globals;
+lazy_static! {
+    pub static ref CONFIG_PATH: PathBuf = {
+        match dirs::config_dir() {
+            Some(path) => path.join("post_maker.config"),
+            None => std::env::current_exe()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .join("post_maker.config"),
+        }
+    };
+}
 
 /// Simple program calculate size of stuff in quote image
 #[derive(Parser, Debug)]
@@ -85,7 +97,7 @@ impl Default for ConfigFile {
             tag_font_ratio: 150.0,
             quote_position_ratio: 0.7,
             tag_position_ratio: 0.5,
-            image_ratio: (4.0, 4.0),
+            image_ratio: (4.0, 5.0),
             color_layer: [20, 22, 25, 197],
         }
     }
@@ -93,63 +105,52 @@ impl Default for ConfigFile {
 
 impl ConfigFile {
     pub(crate) fn load() -> Self {
-        let conf = match dirs::config_dir() {
-            Some(path) => path.join("post_maker.config"),
-            None => std::env::current_exe()
-                .unwrap()
-                .parent()
-                .unwrap()
-                .join("post_maker.config"),
-        };
-
-        if conf.exists() {
-            let map = match std::fs::read_to_string(&conf) {
-                Ok(r) => serde_json::from_str::<HashMap<String, Self>>(&r).ok(),
-                Err(_) => None,
-            };
+        // config_picker::ConfigPicker::new();
+        if CONFIG_PATH.exists() {
+            let map = get_configs();
 
             let map = match map {
                 Some(m) => m,
                 None => HashMap::new(),
             };
 
-            if let Some(config) = map.get(&*globals::CONFIG_NAME.read().unwrap()) {
+            let default_config = (&*globals::CONFIG_NAME.read().unwrap()).to_string();
+            let config_name = if map.len() > 1 || !map.contains_key(&default_config) {
+                ConfigPicker::new(map.keys().map(|a| a.to_owned()).collect())
+                    .selected()
+                    .unwrap_or(default_config)
+            } else {
+                default_config
+            };
+
+            if let Some(config) = map.get(&config_name) {
+                *globals::CONFIG_NAME.write().unwrap() = config_name;
                 return config.to_owned();
             }
         }
 
         let config = Self::default();
-        config.save();
+        let mut configs = HashMap::new();
+        configs.insert(
+            (&*globals::CONFIG_NAME.read().unwrap()).to_owned(),
+            config.clone(),
+        );
+        save_configs(configs);
         config
     }
+}
 
-    pub(crate) fn save(&self) {
-        let config_name = &*globals::CONFIG_NAME.read().unwrap();
-        let conf = match dirs::config_dir() {
-            Some(path) => path.join("post_maker.config"),
-            None => std::env::current_exe()
-                .unwrap()
-                .parent()
-                .unwrap()
-                .join("post_maker.config"),
-        };
+pub(crate) fn get_configs() -> Option<HashMap<String, ConfigFile>> {
+    match std::fs::read_to_string(&*CONFIG_PATH) {
+        Ok(r) => serde_json::from_str::<HashMap<String, ConfigFile>>(&r).ok(),
+        Err(_) => None,
+    }
+}
 
-        let map = match std::fs::read_to_string(&conf) {
-            Ok(r) => serde_json::from_str::<HashMap<String, Self>>(&r).ok(),
-            Err(_) => None,
-        };
-
-        let mut map = match map {
-            Some(m) => m,
-            None => HashMap::new(),
-        };
-
-        map.insert(config_name.to_owned(), (*self).clone());
-
-        if let Err(_) = std::fs::write(&conf, serde_json::to_string(&map).unwrap()) {
-            dialog::message_default("Can't write config!");
-            eprintln!("Can't write config!");
-        }
+pub(crate) fn save_configs(configs: HashMap<String, ConfigFile>) {
+    if let Err(_) = std::fs::write(&*CONFIG_PATH, serde_json::to_string(&configs).unwrap()) {
+        dialog::alert_default("Can't write config!");
+        eprintln!("Can't write config!");
     }
 }
 

@@ -1,9 +1,10 @@
 //! Window to edit configuration
 
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use fltk::{
     app,
+    browser::{Browser, BrowserType},
     button::Button,
     dialog::{self, FileDialogOptions, NativeFileChooser},
     enums::{Align, Font},
@@ -17,16 +18,27 @@ use fltk::{
     window::Window,
 };
 
-use crate::{config::ConfigFile, globals};
+use crate::{
+    config::{self, ConfigFile},
+    globals,
+};
 
 pub(crate) struct ConfigWindow {
     pub(crate) win: Window,
+    pub(crate) browse: Browser,
+    pub(crate) selected_browse_line: Rc<RefCell<i32>>,
+    pub(crate) add_config_btn: Button,
+    pub(crate) del_config_btn: Button,
     pub(crate) quote_font_ttf: Output,
     pub(crate) quote_font_ttf_browse: Button,
     pub(crate) tag_font_ttf: Output,
     pub(crate) tag_font_ttf_browse: Button,
     pub(crate) quote_font_ratio: ValueInput,
     pub(crate) tag_font_ratio: ValueInput,
+    pub(crate) quote_position_ratio: ValueInput,
+    pub(crate) tag_position_ratio: ValueInput,
+    pub(crate) image_ratio_width: ValueInput,
+    pub(crate) image_ratio_height: ValueInput,
     pub(crate) layer_red: Spinner,
     pub(crate) layer_green: Spinner,
     pub(crate) layer_blue: Spinner,
@@ -34,24 +46,48 @@ pub(crate) struct ConfigWindow {
     pub(crate) defaults_btn: Button,
     pub(crate) save_btn: Button,
     pub(crate) cancel_btn: Button,
+    pub(crate) configs: Rc<RefCell<HashMap<String, ConfigFile>>>,
     did_save: Rc<RefCell<bool>>,
 }
 
 impl ConfigWindow {
     pub(crate) fn new() -> Self {
-        let mut win = Window::new(0, 0, 500, 300, "Config").center_screen();
+        let configs = config::get_configs().unwrap_or(HashMap::new());
+        let mut win = Window::new(0, 0, 700, 450, "Config").center_screen();
         win.set_icon(Some(
             SvgImage::from_data(globals::ICON.to_str().unwrap()).unwrap(),
         ));
+        let mut row = Flex::default().with_size(690, 440).with_pos(5, 5).row();
+        let mut config_picker_flex = Flex::default().column();
+        // Picker
+        let browse = Browser::default().with_type(BrowserType::Hold);
 
-        let mut col = Flex::default().with_size(490, 290).with_pos(5, 5).column();
+        // Panel
+        let top_padding_btn = Frame::default();
+        let mut panel_flex = Flex::default().row();
+        Frame::default();
+        let add_config_btn = Button::default().with_label("add");
+        let del_config_btn = Button::default().with_label("delete");
+        Frame::default();
+        panel_flex.set_size(&add_config_btn, 50);
+        panel_flex.set_size(&del_config_btn, 50);
+        panel_flex.end();
+        let bottom_padding_btn = Frame::default();
+
+        config_picker_flex.set_size(&top_padding_btn, 5);
+        config_picker_flex.set_size(&panel_flex, 30);
+        config_picker_flex.set_size(&bottom_padding_btn, 5);
+        config_picker_flex.end();
+        row.set_size(&config_picker_flex, 200);
+
+        let mut col = Flex::default().column();
 
         let mut quote_font_ttf_grp = Flex::default().row();
         quote_font_ttf_grp.set_size(
             &Frame::default()
                 .with_label("Font for quote (ttf)")
                 .with_align(Align::Right | Align::Inside),
-            160,
+            170,
         );
         let quote_font_ttf = Output::default();
         let quote_font_ttf_browse = Button::default().with_label("Pick");
@@ -64,7 +100,7 @@ impl ConfigWindow {
             &Frame::default()
                 .with_label("Font for tag (ttf)")
                 .with_align(Align::Right | Align::Inside),
-            160,
+            170,
         );
         let tag_font_ttf = Output::default();
         let tag_font_ttf_browse = Button::default().with_label("Pick");
@@ -77,14 +113,14 @@ impl ConfigWindow {
             &Frame::default()
                 .with_label("Quote text size ratio")
                 .with_align(Align::Right | Align::Inside),
-            160,
+            170,
         );
         let quote_font_ratio = ValueInput::default();
         quote_font_ratio_grp.end();
         col.set_size(&quote_font_ratio_grp, 30);
 
         let mut grp = Flex::default().row();
-        grp.set_size(&Frame::default(), 160);
+        grp.set_size(&Frame::default(), 170);
         let mut hint = Frame::default()
             .with_label("Font size in image of resolution 4000x5000")
             .with_align(Align::Left | Align::Inside);
@@ -98,14 +134,14 @@ impl ConfigWindow {
             &Frame::default()
                 .with_label("Tag text size ratio")
                 .with_align(Align::Right | Align::Inside),
-            160,
+            170,
         );
         let tag_font_ratio = ValueInput::default();
         tag_font_ratio_grp.end();
         col.set_size(&tag_font_ratio_grp, 30);
 
         let mut grp = Flex::default().row();
-        grp.set_size(&Frame::default(), 160);
+        grp.set_size(&Frame::default(), 170);
         let mut hint = Frame::default()
             .with_label("Font size in image of resolution 4000x5000")
             .with_align(Align::Left | Align::Inside);
@@ -113,6 +149,41 @@ impl ConfigWindow {
         hint.set_label_size(12);
         grp.end();
         col.set_size(&grp, 13);
+
+        let mut quote_position_ratio_grp = Flex::default().row();
+        quote_position_ratio_grp.set_size(
+            &Frame::default()
+                .with_label("Quote text position ratio")
+                .with_align(Align::Right | Align::Inside),
+            170,
+        );
+        let quote_position_ratio = ValueInput::default();
+        quote_position_ratio_grp.end();
+        col.set_size(&quote_position_ratio_grp, 30);
+
+        let mut tag_position_ratio_grp = Flex::default().row();
+        tag_position_ratio_grp.set_size(
+            &Frame::default()
+                .with_label("Tag text position ratio")
+                .with_align(Align::Right | Align::Inside),
+            170,
+        );
+        let tag_position_ratio = ValueInput::default();
+        tag_position_ratio_grp.end();
+        col.set_size(&tag_position_ratio_grp, 30);
+
+        let mut image_ratio_grp = Flex::default().row();
+        image_ratio_grp.set_size(
+            &Frame::default()
+                .with_label("Image size ratio")
+                .with_align(Align::Right | Align::Inside),
+            170,
+        );
+        let image_ratio_width = ValueInput::default();
+        image_ratio_grp.set_size(&Frame::default().with_label("x"), 30);
+        let image_ratio_height = ValueInput::default();
+        image_ratio_grp.end();
+        col.set_size(&image_ratio_grp, 30);
 
         col.set_size(
             &Frame::default().with_label("Default colour shader to use with new images:"),
@@ -155,18 +226,27 @@ impl ConfigWindow {
         col.set_size(&panel_grp, 30);
 
         col.end();
+        row.end();
         win.end();
         win.make_modal(true);
         win.make_resizable(true);
 
         let mut config_window = Self {
             win,
+            browse,
+            selected_browse_line: Rc::new(RefCell::new(0)),
+            add_config_btn,
+            del_config_btn,
             quote_font_ttf,
             quote_font_ttf_browse,
             tag_font_ttf,
             tag_font_ttf_browse,
             quote_font_ratio,
             tag_font_ratio,
+            quote_position_ratio,
+            tag_position_ratio,
+            image_ratio_width,
+            image_ratio_height,
             layer_red,
             layer_green,
             layer_blue,
@@ -174,6 +254,7 @@ impl ConfigWindow {
             defaults_btn,
             save_btn,
             cancel_btn,
+            configs: Rc::new(RefCell::new(configs)),
             did_save: Rc::new(RefCell::new(false)),
         };
         config_window.event();
@@ -182,17 +263,32 @@ impl ConfigWindow {
     }
 
     pub(crate) fn show(&mut self) -> bool {
-        let glob = globals::CONFIG.read().unwrap();
-        self.quote_font_ttf.set_value(glob.quote_font_ttf.as_str());
-        self.tag_font_ttf.set_value(glob.tag_font_ttf.as_str());
-        self.quote_font_ratio.set_value(glob.quote_font_ratio);
-        self.tag_font_ratio.set_value(glob.tag_font_ratio);
-        self.layer_red.set_value(glob.color_layer[0] as f64);
-        self.layer_green.set_value(glob.color_layer[1] as f64);
-        self.layer_blue.set_value(glob.color_layer[2] as f64);
-        self.layer_alpha.set_value(glob.color_layer[3] as f64);
+        let config_name = &*globals::CONFIG_NAME.read().unwrap();
+        self.browse.clear();
+        for (idx, name) in self.configs.borrow().keys().enumerate() {
+            self.browse.add(name);
+            if name == config_name {
+                self.browse.select(idx as i32 + 1);
+            }
+        }
+        *self.selected_browse_line.borrow_mut() = self.browse.value();
+        let config = globals::CONFIG.read().unwrap();
+        self.quote_font_ttf
+            .set_value(config.quote_font_ttf.as_str());
+        self.tag_font_ttf.set_value(config.tag_font_ttf.as_str());
+        self.quote_font_ratio.set_value(config.quote_font_ratio);
+        self.tag_font_ratio.set_value(config.tag_font_ratio);
+        self.quote_position_ratio
+            .set_value(config.quote_position_ratio);
+        self.tag_position_ratio.set_value(config.tag_position_ratio);
+        self.image_ratio_width.set_value(config.image_ratio.0);
+        self.image_ratio_height.set_value(config.image_ratio.1);
+        self.layer_red.set_value(config.color_layer[0] as f64);
+        self.layer_green.set_value(config.color_layer[1] as f64);
+        self.layer_blue.set_value(config.color_layer[2] as f64);
+        self.layer_alpha.set_value(config.color_layer[3] as f64);
         *self.did_save.borrow_mut() = false;
-        drop(glob);
+        drop(config);
         self.win.show();
         while self.win.shown() {
             app::wait();
@@ -202,12 +298,197 @@ impl ConfigWindow {
 
     fn event(&mut self) {
         let mut quote_font_ttf = self.quote_font_ttf.clone();
+        let mut tag_font_ttf = self.tag_font_ttf.clone();
+        let mut quote_font_ratio = self.quote_font_ratio.clone();
+        let mut tag_font_ratio = self.tag_font_ratio.clone();
+        let mut quote_position_ratio = self.quote_position_ratio.clone();
+        let mut tag_position_ratio = self.tag_position_ratio.clone();
+        let mut image_ratio_width = self.image_ratio_width.clone();
+        let mut image_ratio_height = self.image_ratio_height.clone();
+        let mut layer_red = self.layer_red.clone();
+        let mut layer_green = self.layer_green.clone();
+        let mut layer_blue = self.layer_blue.clone();
+        let mut layer_alpha = self.layer_alpha.clone();
+        let mut browse = self.browse.clone();
+        let configs = Rc::clone(&self.configs);
+        let selected_browse_line = Rc::clone(&self.selected_browse_line);
+        self.add_config_btn.set_callback(move |_| {
+            let name = loop {
+                let name = dialog::input_default("Enter new config's name", "");
+                match name {
+                    Some(name) => {
+                        let name = name.trim();
+                        if name == "" {
+                            dialog::alert_default("Name is empty!");
+                        } else if !configs.borrow().contains_key(name) {
+                            break name.to_owned();
+                        } else {
+                            dialog::alert_default("Name is already used!");
+                        }
+                    }
+                    None => {
+                        return;
+                    }
+                }
+            };
+
+            if let Some(conf) = configs
+                .borrow_mut()
+                .get_mut(&browse.selected_text().unwrap())
+            {
+                conf.quote_font_ttf = quote_font_ttf.value();
+                conf.tag_font_ttf = tag_font_ttf.value();
+                conf.quote_font_ratio = quote_font_ratio.value();
+                conf.tag_font_ratio = tag_font_ratio.value();
+                conf.quote_position_ratio = quote_position_ratio.value();
+                conf.tag_position_ratio = tag_position_ratio.value();
+                conf.image_ratio = (image_ratio_width.value(), image_ratio_height.value());
+                conf.color_layer = [
+                    layer_red.value() as u8,
+                    layer_green.value() as u8,
+                    layer_blue.value() as u8,
+                    layer_alpha.value() as u8,
+                ];
+            }
+
+            let conf = ConfigFile::default();
+            quote_font_ttf.set_value(&conf.quote_font_ttf);
+            tag_font_ttf.set_value(&conf.tag_font_ttf);
+            quote_font_ratio.set_value(conf.quote_font_ratio);
+            tag_font_ratio.set_value(conf.tag_font_ratio);
+            quote_position_ratio.set_value(conf.quote_position_ratio);
+            tag_position_ratio.set_value(conf.tag_position_ratio);
+            image_ratio_width.set_value(conf.image_ratio.0);
+            image_ratio_height.set_value(conf.image_ratio.1);
+            layer_red.set_value(conf.color_layer[0] as f64);
+            layer_green.set_value(conf.color_layer[1] as f64);
+            layer_blue.set_value(conf.color_layer[2] as f64);
+            layer_alpha.set_value(conf.color_layer[3] as f64);
+            browse.add(&name);
+            configs.borrow_mut().insert(name.clone(), conf);
+            browse.select(browse.size());
+            *selected_browse_line.borrow_mut() = browse.value();
+        });
+
+        let mut quote_font_ttf = self.quote_font_ttf.clone();
+        let mut tag_font_ttf = self.tag_font_ttf.clone();
+        let mut quote_font_ratio = self.quote_font_ratio.clone();
+        let mut tag_font_ratio = self.tag_font_ratio.clone();
+        let mut quote_position_ratio = self.quote_position_ratio.clone();
+        let mut tag_position_ratio = self.tag_position_ratio.clone();
+        let mut image_ratio_width = self.image_ratio_width.clone();
+        let mut image_ratio_height = self.image_ratio_height.clone();
+        let mut layer_red = self.layer_red.clone();
+        let mut layer_green = self.layer_green.clone();
+        let mut layer_blue = self.layer_blue.clone();
+        let mut layer_alpha = self.layer_alpha.clone();
+        let mut browse = self.browse.clone();
+        let configs = Rc::clone(&self.configs);
+        let selected_browse_line = Rc::clone(&self.selected_browse_line);
+        self.del_config_btn.set_callback(move |_| {
+            let ch = dialog::choice_default("Do you want to delete??", "Yes", "No", "");
+            if ch == 1 {
+                return;
+            }
+            if browse.size() == 1 {
+                dialog::alert_default("Atleast one config should exist!");
+                return;
+            }
+            let line = browse.value();
+            configs
+                .borrow_mut()
+                .remove(&browse.selected_text().unwrap());
+            browse.remove(browse.value());
+
+            let line = if browse.size() < line { line - 1 } else { line };
+            browse.select(line);
+            *selected_browse_line.borrow_mut() = browse.value();
+
+            if let Some(conf) = configs.borrow().get(&browse.selected_text().unwrap()) {
+                quote_font_ttf.set_value(&conf.quote_font_ttf);
+                tag_font_ttf.set_value(&conf.tag_font_ttf);
+                quote_font_ratio.set_value(conf.quote_font_ratio);
+                tag_font_ratio.set_value(conf.tag_font_ratio);
+                quote_position_ratio.set_value(conf.quote_position_ratio);
+                tag_position_ratio.set_value(conf.tag_position_ratio);
+                image_ratio_width.set_value(conf.image_ratio.0);
+                image_ratio_height.set_value(conf.image_ratio.1);
+                layer_red.set_value(conf.color_layer[0] as f64);
+                layer_green.set_value(conf.color_layer[1] as f64);
+                layer_blue.set_value(conf.color_layer[2] as f64);
+                layer_alpha.set_value(conf.color_layer[3] as f64);
+            }
+        });
+
+        let mut quote_font_ttf = self.quote_font_ttf.clone();
+        let mut tag_font_ttf = self.tag_font_ttf.clone();
+        let mut quote_font_ratio = self.quote_font_ratio.clone();
+        let mut tag_font_ratio = self.tag_font_ratio.clone();
+        let mut quote_position_ratio = self.quote_position_ratio.clone();
+        let mut tag_position_ratio = self.tag_position_ratio.clone();
+        let mut image_ratio_width = self.image_ratio_width.clone();
+        let mut image_ratio_height = self.image_ratio_height.clone();
+        let mut layer_red = self.layer_red.clone();
+        let mut layer_green = self.layer_green.clone();
+        let mut layer_blue = self.layer_blue.clone();
+        let mut layer_alpha = self.layer_alpha.clone();
+        let configs = Rc::clone(&self.configs);
+        let selected_browse_line = Rc::clone(&self.selected_browse_line);
+        self.browse.set_callback(move |f| {
+            if f.value() == 0 {
+                f.select(*selected_browse_line.borrow());
+                return;
+            }
+
+            if *selected_browse_line.borrow() == f.value() {
+                return;
+            }
+
+            if let Some(conf) = configs
+                .borrow_mut()
+                .get_mut(&f.text(*selected_browse_line.borrow()).unwrap())
+            {
+                conf.quote_font_ttf = quote_font_ttf.value();
+                conf.tag_font_ttf = tag_font_ttf.value();
+                conf.quote_font_ratio = quote_font_ratio.value();
+                conf.tag_font_ratio = tag_font_ratio.value();
+                conf.quote_position_ratio = quote_position_ratio.value();
+                conf.tag_position_ratio = tag_position_ratio.value();
+                conf.image_ratio = (image_ratio_width.value(), image_ratio_height.value());
+                conf.color_layer = [
+                    layer_red.value() as u8,
+                    layer_green.value() as u8,
+                    layer_blue.value() as u8,
+                    layer_alpha.value() as u8,
+                ];
+            }
+
+            if let Some(conf) = configs.borrow().get(&f.selected_text().unwrap()) {
+                quote_font_ttf.set_value(&conf.quote_font_ttf);
+                tag_font_ttf.set_value(&conf.tag_font_ttf);
+                quote_font_ratio.set_value(conf.quote_font_ratio);
+                tag_font_ratio.set_value(conf.tag_font_ratio);
+                quote_position_ratio.set_value(conf.quote_position_ratio);
+                tag_position_ratio.set_value(conf.tag_position_ratio);
+                image_ratio_width.set_value(conf.image_ratio.0);
+                image_ratio_height.set_value(conf.image_ratio.1);
+                layer_red.set_value(conf.color_layer[0] as f64);
+                layer_green.set_value(conf.color_layer[1] as f64);
+                layer_blue.set_value(conf.color_layer[2] as f64);
+                layer_alpha.set_value(conf.color_layer[3] as f64);
+            }
+            *selected_browse_line.borrow_mut() = f.value();
+            // println!("browse {:?}", selected_config_name);
+        });
+
+        let mut quote_font_ttf = self.quote_font_ttf.clone();
         self.quote_font_ttf_browse.set_callback(move |_| {
             let mut chooser = NativeFileChooser::new(fltk::dialog::FileDialogType::BrowseFile);
             chooser.set_option(FileDialogOptions::UseFilterExt);
             chooser.set_filter("*.ttf");
             chooser.show();
             let path = chooser.filename();
+            let path = std::fs::canonicalize(&path).unwrap_or(path);
             quote_font_ttf.set_value(path.to_str().unwrap());
         });
 
@@ -230,6 +511,10 @@ impl ConfigWindow {
         let mut tag_font_ttf = self.tag_font_ttf.clone();
         let mut quote_font_ratio = self.quote_font_ratio.clone();
         let mut tag_font_ratio = self.tag_font_ratio.clone();
+        let mut quote_position_ratio = self.quote_position_ratio.clone();
+        let mut tag_position_ratio = self.tag_position_ratio.clone();
+        let mut image_ratio_width = self.image_ratio_width.clone();
+        let mut image_ratio_height = self.image_ratio_height.clone();
         let mut layer_red = self.layer_red.clone();
         let mut layer_green = self.layer_green.clone();
         let mut layer_blue = self.layer_blue.clone();
@@ -240,44 +525,60 @@ impl ConfigWindow {
             tag_font_ttf.set_value(&conf.tag_font_ttf);
             quote_font_ratio.set_value(conf.quote_font_ratio);
             tag_font_ratio.set_value(conf.tag_font_ratio);
+            quote_position_ratio.set_value(conf.quote_position_ratio);
+            tag_position_ratio.set_value(conf.tag_position_ratio);
+            image_ratio_width.set_value(conf.image_ratio.0);
+            image_ratio_height.set_value(conf.image_ratio.1);
             layer_red.set_value(conf.color_layer[0] as f64);
             layer_green.set_value(conf.color_layer[1] as f64);
             layer_blue.set_value(conf.color_layer[2] as f64);
             layer_alpha.set_value(conf.color_layer[3] as f64);
         });
 
-        let mut win = self.win.clone();
         let quote_font_ttf = self.quote_font_ttf.clone();
         let tag_font_ttf = self.tag_font_ttf.clone();
         let quote_font_ratio = self.quote_font_ratio.clone();
         let tag_font_ratio = self.tag_font_ratio.clone();
+        let quote_position_ratio = self.quote_position_ratio.clone();
+        let tag_position_ratio = self.tag_position_ratio.clone();
+        let image_ratio_width = self.image_ratio_width.clone();
+        let image_ratio_height = self.image_ratio_height.clone();
         let layer_red = self.layer_red.clone();
         let layer_green = self.layer_green.clone();
         let layer_blue = self.layer_blue.clone();
         let layer_alpha = self.layer_alpha.clone();
+        let browse = self.browse.clone();
+        let configs = Rc::clone(&self.configs);
         let did_save = Rc::clone(&self.did_save);
+        let mut win = self.win.clone();
         self.save_btn.set_callback(move |_| {
-            let conf = ConfigFile {
-                quote_font_ttf: quote_font_ttf.value(),
-                tag_font_ttf: tag_font_ttf.value(),
-                quote_font_ratio: quote_font_ratio.value(),
-                tag_font_ratio: tag_font_ratio.value(),
-                quote_position_ratio: *globals::QUOTE_POSITION_RATIO.read().unwrap(),
-                tag_position_ratio: *globals::TAG_POSITION_RATIO.read().unwrap(),
-                image_ratio: *globals::IMAGE_RATIO.read().unwrap(),
-                color_layer: [
+            if let Some(conf) = configs
+                .borrow_mut()
+                .get_mut(&browse.selected_text().unwrap())
+            {
+                conf.quote_font_ttf = quote_font_ttf.value();
+                conf.tag_font_ttf = tag_font_ttf.value();
+                conf.quote_font_ratio = quote_font_ratio.value();
+                conf.tag_font_ratio = tag_font_ratio.value();
+                conf.quote_position_ratio = quote_position_ratio.value();
+                conf.tag_position_ratio = tag_position_ratio.value();
+                conf.image_ratio = (image_ratio_width.value(), image_ratio_height.value());
+                conf.color_layer = [
                     layer_red.value() as u8,
                     layer_green.value() as u8,
                     layer_blue.value() as u8,
                     layer_alpha.value() as u8,
-                ],
-            };
+                ];
+            }
 
-            conf.save();
-            *globals::CONFIG.write().unwrap() = conf;
+            config::save_configs((*configs.borrow()).clone());
+
+            if let Some(c) = configs.borrow().get(&*globals::CONFIG_NAME.read().unwrap()) {
+                *globals::CONFIG.write().unwrap() = c.to_owned();
+            }
             *did_save.borrow_mut() = true;
             win.hide();
-            dialog::message_default("Re-open Post Maker to see changes!")
+            dialog::message_default("Re-open Post Maker to see changes properly!")
         });
     }
 }
