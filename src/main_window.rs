@@ -31,17 +31,21 @@ pub(crate) struct MainWindow {
     pub(crate) save_btn: Button,
     pub(crate) file_choice: menu::Choice,
     pub(crate) quote: MultilineInput,
+    pub(crate) subquote: MultilineInput,
     pub(crate) tag: Input,
     pub(crate) layer_red: Spinner,
     pub(crate) layer_green: Spinner,
     pub(crate) layer_blue: Spinner,
     pub(crate) layer_alpha: Spinner,
     pub(crate) quote_position: Spinner,
+    pub(crate) subquote_position: Spinner,
     pub(crate) tag_position: Spinner,
     pub(crate) quote_position_slider: Slider,
+    pub(crate) subquote_position_slider: Slider,
     pub(crate) tag_position_slider: Slider,
     pub(crate) reset_darklayer_btn: Button,
     pub(crate) reset_quote_position_btn: Button,
+    pub(crate) reset_subquote_position_btn: Button,
     pub(crate) reset_tag_position_btn: Button,
     pub(crate) reset_file_choice: Button,
     pub(crate) crop_btn: Button,
@@ -69,7 +73,7 @@ impl MainWindow {
         sender: app::Sender<crate::AppMessage>,
         draw_buff: Arc<RwLock<Option<Vec<u8>>>>,
     ) -> Self {
-        let mut win = Window::new(0, 0, 1000, 650, "Post Maker").center_screen();
+        let mut win = Window::new(0, 0, 1000, 700, "Post Maker").center_screen();
         win.set_icon(Some(
             SvgImage::from_data(globals::ICON.to_str().unwrap()).unwrap(),
         ));
@@ -101,15 +105,23 @@ impl MainWindow {
             &Frame::default()
                 .with_label("Quote:")
                 .with_align(enums::Align::Left | enums::Align::Inside),
-            30,
+            25,
         );
         let quote = MultilineInput::default();
-        controls_flex.set_size(&quote, 90);
+        controls_flex.set_size(&quote, 70);
+        controls_flex.set_size(
+            &Frame::default()
+                .with_label("Subquote:")
+                .with_align(enums::Align::Left | enums::Align::Inside),
+            25,
+        );
+        let subquote = MultilineInput::default();
+        controls_flex.set_size(&subquote, 70);
         controls_flex.set_size(
             &Frame::default()
                 .with_label("Tag:")
                 .with_align(enums::Align::Left | enums::Align::Inside),
-            30,
+            25,
         );
         let tag = Input::default();
         controls_flex.set_size(&tag, 30);
@@ -160,6 +172,22 @@ impl MainWindow {
         quote_position_slider.set_step(1.0, 1);
         quote_position_slider.set_frame(enums::FrameType::NoBox);
         controls_flex.set_size(&quote_position_slider, 30);
+
+        let mut subquote_position_flex = Flex::default().row();
+        Frame::default()
+            .with_label("Subquote Position:")
+            .with_align(enums::Align::Left | enums::Align::Inside);
+        let subquote_position = fltk::misc::Spinner::default();
+        let mut reset_subquote_position_btn = Button::default();
+        reset_subquote_position_btn.set_image(Some(reload_image.clone()));
+        subquote_position_flex.set_size(&reset_subquote_position_btn, 30);
+        subquote_position_flex.end();
+        controls_flex.set_size(&subquote_position_flex, 30);
+
+        let mut subquote_position_slider = Slider::default().with_type(SliderType::HorizontalNice);
+        subquote_position_slider.set_step(1.0, 1);
+        subquote_position_slider.set_frame(enums::FrameType::NoBox);
+        controls_flex.set_size(&subquote_position_slider, 30);
 
         let mut tag_position_flex = Flex::default().row();
         Frame::default()
@@ -232,17 +260,21 @@ impl MainWindow {
             save_btn,
             file_choice,
             quote,
+            subquote,
             tag,
             layer_red,
             layer_green,
             layer_blue,
             layer_alpha,
             quote_position,
+            subquote_position,
             tag_position,
             quote_position_slider,
+            subquote_position_slider,
             tag_position_slider,
             reset_darklayer_btn,
             reset_quote_position_btn,
+            reset_subquote_position_btn,
             reset_tag_position_btn,
             reset_file_choice,
             crop_btn,
@@ -396,11 +428,30 @@ impl MainWindow {
         self.reset_quote_position_btn.set_callback(move |_| {
             let mut prop = properties.write().unwrap();
             let height = prop.original_dimension.1;
-            let pos = (height * 2.0) / 3.0;
+            let pos = height * globals::CONFIG.read().unwrap().quote_position_ratio;
             prop.quote_position = pos;
             prop.is_saved = false;
             quote_position.set_value(pos);
             quote_position_slider.set_value(pos);
+
+            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::Flush).unwrap();
+            image.redraw();
+        });
+
+        let mut subquote_position = self.subquote_position.clone();
+        let mut subquote_position_slider = self.subquote_position_slider.clone();
+        let mut image = self.page.image.clone();
+        let sender = self.sender.clone();
+        let properties = Arc::clone(&self.properties);
+        self.reset_subquote_position_btn.set_callback(move |_| {
+            let mut prop = properties.write().unwrap();
+            let height = prop.original_dimension.1;
+            let pos = height * globals::CONFIG.read().unwrap().subquote_position_ratio;
+            prop.subquote_position = pos;
+            prop.is_saved = false;
+            subquote_position.set_value(pos);
+            subquote_position_slider.set_value(pos);
 
             sender.send(DrawMessage::Recalc).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
@@ -415,7 +466,7 @@ impl MainWindow {
         self.reset_tag_position_btn.set_callback(move |_| {
             let mut prop = properties.write().unwrap();
             let height = prop.original_dimension.1;
-            let pos = height / 2.0;
+            let pos = height * globals::CONFIG.read().unwrap().tag_position_ratio;
             prop.tag_position = pos;
             prop.is_saved = false;
             tag_position.set_value(pos);
@@ -550,6 +601,21 @@ impl MainWindow {
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
+        self.subquote.handle(move |f, ev| {
+            if ev == enums::Event::KeyUp {
+                let mut prop = properties.write().unwrap();
+                prop.subquote = f.value();
+                prop.is_saved = false;
+                sender.send(DrawMessage::Recalc).unwrap();
+                sender.send(DrawMessage::Flush).unwrap();
+                image.redraw();
+            }
+            true
+        });
+
+        let mut image = self.page.image.clone();
+        let properties = Arc::clone(&self.properties);
+        let sender = self.sender.clone();
         self.tag.handle(move |f, ev| {
             if ev == enums::Event::KeyUp {
                 let mut prop = properties.write().unwrap();
@@ -584,6 +650,34 @@ impl MainWindow {
             let mut prop = properties.write().unwrap();
             prop.quote_position = f.value();
             quote_position.set_value(f.value());
+            prop.is_saved = false;
+            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::Flush).unwrap();
+            image.redraw();
+        });
+
+        let mut image = self.page.image.clone();
+        let properties = Arc::clone(&self.properties);
+        let sender = self.sender.clone();
+        let mut subquote_position_slider = self.subquote_position_slider.clone();
+        self.subquote_position.set_callback(move |f| {
+            let mut prop = properties.write().unwrap();
+            prop.subquote_position = f.value();
+            subquote_position_slider.set_value(f.value());
+            prop.is_saved = false;
+            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::Flush).unwrap();
+            image.redraw();
+        });
+
+        let mut image = self.page.image.clone();
+        let properties = Arc::clone(&self.properties);
+        let sender = self.sender.clone();
+        let mut subquote_position = self.subquote_position.clone();
+        self.subquote_position_slider.set_callback(move |f| {
+            let mut prop = properties.write().unwrap();
+            prop.subquote_position = f.value();
+            subquote_position.set_value(f.value());
             prop.is_saved = false;
             sender.send(DrawMessage::Recalc).unwrap();
             sender.send(DrawMessage::Flush).unwrap();

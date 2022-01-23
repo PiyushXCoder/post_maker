@@ -50,14 +50,17 @@ pub(crate) fn spawn_image_thread(
     let mut win = main_win.win.clone();
     let mut file_choice = main_win.file_choice.clone();
     let mut quote = main_win.quote.clone();
+    let mut subquote = main_win.subquote.clone();
     let mut tag = main_win.tag.clone();
     let mut layer_red = main_win.layer_red.clone();
     let mut layer_green = main_win.layer_green.clone();
     let mut layer_blue = main_win.layer_blue.clone();
     let mut layer_alpha = main_win.layer_alpha.clone();
     let mut quote_position = main_win.quote_position.clone();
+    let mut subquote_position = main_win.subquote_position.clone();
     let mut tag_position = main_win.tag_position.clone();
     let mut quote_position_slider = main_win.quote_position_slider.clone();
+    let mut subquote_position_slider = main_win.subquote_position_slider.clone();
     let mut tag_position_slider = main_win.tag_position_slider.clone();
     let mut page = main_win.page.clone();
     let mut status = main_win.status.clone();
@@ -76,14 +79,17 @@ pub(crate) fn spawn_image_thread(
                         Arc::clone(&images_path),
                         None,
                         &mut quote,
+                        &mut subquote,
                         &mut tag,
                         &mut layer_red,
                         &mut layer_green,
                         &mut layer_blue,
                         &mut layer_alpha,
                         &mut quote_position,
+                        &mut subquote_position,
                         &mut tag_position,
                         &mut quote_position_slider,
+                        &mut subquote_position_slider,
                         &mut tag_position_slider,
                         &mut page,
                         &mut count,
@@ -102,14 +108,17 @@ pub(crate) fn spawn_image_thread(
                         Arc::clone(&images_path),
                         Some((x, y)),
                         &mut quote,
+                        &mut subquote,
                         &mut tag,
                         &mut layer_red,
                         &mut layer_green,
                         &mut layer_blue,
                         &mut layer_alpha,
                         &mut quote_position,
+                        &mut subquote_position,
                         &mut tag_position,
                         &mut quote_position_slider,
+                        &mut subquote_position_slider,
                         &mut tag_position_slider,
                         &mut page,
                         &mut count,
@@ -185,14 +194,17 @@ fn load_image(
     images_path: Arc<RwLock<Vec<PathBuf>>>,
     crop: Option<(f64, f64)>,
     quote: &mut MultilineInput,
+    subquote: &mut MultilineInput,
     tag: &mut Input,
     layer_red: &mut Spinner,
     layer_green: &mut Spinner,
     layer_blue: &mut Spinner,
     layer_alpha: &mut Spinner,
     quote_position: &mut Spinner,
+    subquote_position: &mut Spinner,
     tag_position: &mut Spinner,
     quote_position_slider: &mut Slider,
+    subquote_position_slider: &mut Slider,
     tag_position_slider: &mut Slider,
     page: &mut Page,
     count: &mut Frame,
@@ -227,13 +239,18 @@ fn load_image(
                 layer_blue.set_value(saved_prop.rgba[2] as f64);
                 layer_alpha.set_value(saved_prop.rgba[3] as f64);
                 quote.set_value(&saved_prop.quote);
+                subquote.set_value(&saved_prop.subquote);
                 tag.set_value(&saved_prop.tag);
                 quote_position.set_range(0.0, prop.original_dimension.1);
                 quote_position.set_value(saved_prop.quote_position);
+                subquote_position.set_range(0.0, prop.original_dimension.1);
+                subquote_position.set_value(saved_prop.subquote_position);
                 tag_position.set_range(0.0, prop.original_dimension.1);
                 tag_position.set_value(saved_prop.tag_position);
                 quote_position_slider.set_range(0.0, prop.original_dimension.1);
+                subquote_position_slider.set_range(0.0, prop.original_dimension.1);
                 quote_position_slider.set_value(saved_prop.quote_position);
+                subquote_position_slider.set_value(saved_prop.subquote_position);
                 tag_position_slider.set_range(0.0, prop.original_dimension.1);
                 tag_position_slider.set_value(saved_prop.tag_position);
                 dimension.set_label(&format!(
@@ -242,8 +259,10 @@ fn load_image(
                 ));
 
                 prop.quote = saved_prop.quote;
+                prop.subquote = saved_prop.subquote;
                 prop.tag = saved_prop.tag;
                 prop.quote_position = saved_prop.quote_position;
+                prop.subquote_position = saved_prop.subquote_position;
                 prop.tag_position = saved_prop.tag_position;
                 prop.rgba = saved_prop.rgba;
                 prop.is_saved = true;
@@ -265,13 +284,19 @@ fn load_image(
             if crop.is_none() {
                 quote.set_value("");
                 prop.quote = "".to_owned();
+                subquote.set_value("");
+                prop.subquote = "".to_owned();
             }
             quote_position.set_range(0.0, prop.original_dimension.1);
             quote_position.set_value(prop.quote_position);
+            subquote_position.set_range(0.0, prop.original_dimension.1);
+            subquote_position.set_value(prop.subquote_position);
             tag_position.set_range(0.0, prop.original_dimension.1);
             tag_position.set_value(prop.tag_position);
             quote_position_slider.set_range(0.0, prop.original_dimension.1);
             quote_position_slider.set_value(prop.quote_position);
+            subquote_position_slider.set_range(0.0, prop.original_dimension.1);
+            subquote_position_slider.set_value(prop.subquote_position);
             tag_position_slider.set_range(0.0, prop.original_dimension.1);
             tag_position_slider.set_value(prop.tag_position);
 

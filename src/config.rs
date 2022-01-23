@@ -79,10 +79,13 @@ impl Into<ThemeType> for Themes {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConfigFile {
     pub quote_font_ttf: String,
+    pub subquote_font_ttf: String,
     pub tag_font_ttf: String,
     pub quote_font_ratio: f64,
+    pub subquote_font_ratio: f64,
     pub tag_font_ratio: f64,
     pub quote_position_ratio: f64,
+    pub subquote_position_ratio: f64,
     pub tag_position_ratio: f64,
     pub image_ratio: (f64, f64),
     pub color_layer: [u8; 4],
@@ -92,10 +95,13 @@ impl Default for ConfigFile {
     fn default() -> Self {
         Self {
             quote_font_ttf: String::new(),
+            subquote_font_ttf: String::new(),
             tag_font_ttf: String::new(),
             quote_font_ratio: 230.0,
+            subquote_font_ratio: 230.0,
             tag_font_ratio: 150.0,
             quote_position_ratio: 0.7,
+            subquote_position_ratio: 0.8,
             tag_position_ratio: 0.5,
             image_ratio: (4.0, 5.0),
             color_layer: [20, 22, 25, 197],
@@ -115,13 +121,14 @@ impl ConfigFile {
             };
 
             let default_config = (&*globals::CONFIG_NAME.read().unwrap()).to_string();
-            let config_name = if map.len() > 1 || !map.contains_key(&default_config) {
-                ConfigPicker::new(map.keys().map(|a| a.to_owned()).collect())
-                    .selected()
-                    .unwrap_or(default_config)
-            } else {
-                default_config
-            };
+            let config_name =
+                if map.len() > 1 && map.len() != 0 || !map.contains_key(&default_config) {
+                    ConfigPicker::new(map.keys().map(|a| a.to_owned()).collect())
+                        .selected()
+                        .unwrap_or(default_config)
+                } else {
+                    default_config
+                };
 
             if let Some(config) = map.get(&config_name) {
                 *globals::CONFIG_NAME.write().unwrap() = config_name;

@@ -74,6 +74,7 @@ impl ImageContainer {
         prop.path = Some(path.to_owned());
         prop.original_dimension = (width, height);
         prop.quote_position = height * config.quote_position_ratio;
+        prop.subquote_position = height * config.subquote_position_ratio;
         prop.tag_position = height * config.tag_position_ratio;
 
         Self {
@@ -144,7 +145,9 @@ impl ImageContainer {
             &mut tmp,
             &prop.rgba,
             &prop.quote,
+            &prop.subquote,
             prop.quote_position,
+            prop.subquote_position,
             &prop.tag,
             prop.tag_position,
             prop.original_dimension.1,
@@ -191,7 +194,9 @@ impl ImageContainer {
             &mut img,
             &prop.rgba,
             &prop.quote,
+            &prop.subquote,
             prop.quote_position,
+            prop.subquote_position,
             &prop.tag,
             prop.tag_position,
             prop.original_dimension.1,
@@ -276,9 +281,11 @@ pub(crate) struct ImageProperties {
     pub(crate) original_dimension: (f64, f64),
     pub(crate) crop_position: Option<(f64, f64)>,
     pub(crate) quote: String,
+    pub(crate) subquote: String,
     pub(crate) tag: String,
-    pub(crate) quote_position: f64, // as per original
-    pub(crate) tag_position: f64,   // as per original
+    pub(crate) quote_position: f64,    // as per original
+    pub(crate) subquote_position: f64, // as per original
+    pub(crate) tag_position: f64,      // as per original
     pub(crate) rgba: [u8; 4],
     pub(crate) is_saved: bool,
 }
@@ -291,8 +298,10 @@ impl ImageProperties {
             original_dimension: (0.0, 0.0),
             crop_position: None,
             quote: "".to_owned(),
+            subquote: "".to_owned(),
             tag: "".to_owned(),
             quote_position: 0.0,
+            subquote_position: 0.0,
             tag_position: 0.0,
             rgba: [0; 4],
             is_saved: true,
@@ -304,7 +313,9 @@ fn draw_layer_and_text(
     tmp: &mut DynamicImage,
     rgba: &[u8; 4],
     quote: &str,
+    subquote: &str,
     quote_position: f64,
+    subquote_position: f64,
     tag: &str,
     tag_position: f64,
     original_height: f64,
@@ -328,10 +339,30 @@ fn draw_layer_and_text(
             tmp,
             image::Rgba([255, 255, 255, 255]),
             ((width - text_width) / 2.0) as u32,
-            ((quote_position * height) / original_height + index as f64 * (text_height * 1.2))
+            ((quote_position * height) / original_height + index as f64 * (text_height * 1.15))
                 as u32,
             rusttype::Scale::uniform(size as f32),
             &globals::FONT_QUOTE,
+            line,
+        );
+    }
+
+    let size = subquote_from_height(height);
+    for (index, line) in subquote.lines().enumerate() {
+        let (text_width, text_height) = measure_line(
+            &globals::FONT_SUBQUOTE,
+            line,
+            rusttype::Scale::uniform(size as f32),
+        );
+
+        imageproc::drawing::draw_text_mut(
+            tmp,
+            image::Rgba([255, 255, 255, 255]),
+            ((width - text_width) / 2.0) as u32,
+            ((subquote_position * height) / original_height + index as f64 * (text_height * 1.15))
+                as u32,
+            rusttype::Scale::uniform(size as f32),
+            &globals::FONT_SUBQUOTE,
             line,
         );
     }
@@ -376,6 +407,10 @@ pub(crate) fn height_from_width(width: f64) -> f64 {
 
 pub(crate) fn quote_from_height(height: f64) -> f64 {
     (height * globals::CONFIG.read().unwrap().quote_font_ratio) / 5000.0
+}
+
+pub(crate) fn subquote_from_height(height: f64) -> f64 {
+    (height * globals::CONFIG.read().unwrap().subquote_font_ratio) / 5000.0
 }
 
 pub(crate) fn tag_from_height(height: f64) -> f64 {
