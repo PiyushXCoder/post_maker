@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use fltk::dialog;
+use fltk::{button::Button, dialog, enums, prelude::*};
 use image::{DynamicImage, GenericImageView, ImageBuffer};
 use serde::{Deserialize, Serialize};
 
@@ -75,7 +75,9 @@ impl ImageContainer {
         prop.original_dimension = (width, height);
         prop.quote_position = height * config.quote_position_ratio;
         prop.subquote_position = height * config.subquote_position_ratio;
+        prop.subquote2_position = height * config.subquote2_position_ratio;
         prop.tag_position = height * config.tag_position_ratio;
+        prop.tag2_position = height * config.tag2_position_ratio;
 
         Self {
             image: img.clone(),
@@ -146,10 +148,14 @@ impl ImageContainer {
             &prop.rgba,
             &prop.quote,
             &prop.subquote,
+            &prop.subquote2,
             prop.quote_position,
             prop.subquote_position,
+            prop.subquote2_position,
             &prop.tag,
+            &prop.tag2,
             prop.tag_position,
+            prop.tag2_position,
             prop.original_dimension.1,
         );
 
@@ -195,10 +201,14 @@ impl ImageContainer {
             &prop.rgba,
             &prop.quote,
             &prop.subquote,
+            &prop.subquote2,
             prop.quote_position,
             prop.subquote_position,
+            prop.subquote2_position,
             &prop.tag,
+            &prop.tag2,
             prop.tag_position,
+            prop.tag2_position,
             prop.original_dimension.1,
         );
 
@@ -282,10 +292,14 @@ pub(crate) struct ImageProperties {
     pub(crate) crop_position: Option<(f64, f64)>,
     pub(crate) quote: String,
     pub(crate) subquote: String,
+    pub(crate) subquote2: String,
     pub(crate) tag: String,
-    pub(crate) quote_position: f64,    // as per original
-    pub(crate) subquote_position: f64, // as per original
-    pub(crate) tag_position: f64,      // as per original
+    pub(crate) tag2: String,
+    pub(crate) quote_position: f64,     // as per original
+    pub(crate) subquote_position: f64,  // as per original
+    pub(crate) subquote2_position: f64, // as per original
+    pub(crate) tag_position: f64,       // as per original
+    pub(crate) tag2_position: f64,      // as per original
     pub(crate) rgba: [u8; 4],
     pub(crate) is_saved: bool,
 }
@@ -299,10 +313,14 @@ impl ImageProperties {
             crop_position: None,
             quote: "".to_owned(),
             subquote: "".to_owned(),
+            subquote2: "".to_owned(),
             tag: "".to_owned(),
+            tag2: "".to_owned(),
             quote_position: 0.0,
             subquote_position: 0.0,
+            subquote2_position: 0.0,
             tag_position: 0.0,
+            tag2_position: 0.0,
             rgba: [0; 4],
             is_saved: true,
         }
@@ -314,10 +332,14 @@ fn draw_layer_and_text(
     rgba: &[u8; 4],
     quote: &str,
     subquote: &str,
+    subquote2: &str,
     quote_position: f64,
     subquote_position: f64,
+    subquote2_position: f64,
     tag: &str,
+    tag2: &str,
     tag_position: f64,
+    tag2_position: f64,
     original_height: f64,
 ) {
     let (width, height): (f64, f64) = Coord::from(tmp.dimensions()).into();
@@ -328,44 +350,42 @@ fn draw_layer_and_text(
     image::imageops::overlay(tmp, &layer, 0, 0);
 
     let size = quote_from_height(height);
-    for (index, line) in quote.lines().enumerate() {
-        let (text_width, text_height) = measure_line(
-            &globals::FONT_QUOTE,
-            line,
-            rusttype::Scale::uniform(size as f32),
-        );
-
-        imageproc::drawing::draw_text_mut(
-            tmp,
-            image::Rgba([255, 255, 255, 255]),
-            ((width - text_width) / 2.0) as u32,
-            ((quote_position * height) / original_height + index as f64 * (text_height * 1.15))
-                as u32,
-            rusttype::Scale::uniform(size as f32),
-            &globals::FONT_QUOTE,
-            line,
-        );
-    }
-
+    draw_multiline_mid_string(
+        tmp,
+        &globals::FONT_QUOTE,
+        size,
+        quote_position,
+        original_height,
+        quote,
+    );
     let size = subquote_from_height(height);
-    for (index, line) in subquote.lines().enumerate() {
-        let (text_width, text_height) = measure_line(
-            &globals::FONT_SUBQUOTE,
-            line,
-            rusttype::Scale::uniform(size as f32),
-        );
+    draw_multiline_mid_string(
+        tmp,
+        &globals::FONT_SUBQUOTE,
+        size,
+        subquote_position,
+        original_height,
+        subquote,
+    );
+    let size = subquote2_from_height(height);
+    draw_multiline_mid_string(
+        tmp,
+        &globals::FONT_SUBQUOTE2,
+        size,
+        subquote2_position,
+        original_height,
+        subquote2,
+    );
 
-        imageproc::drawing::draw_text_mut(
-            tmp,
-            image::Rgba([255, 255, 255, 255]),
-            ((width - text_width) / 2.0) as u32,
-            ((subquote_position * height) / original_height + index as f64 * (text_height * 1.15))
-                as u32,
-            rusttype::Scale::uniform(size as f32),
-            &globals::FONT_SUBQUOTE,
-            line,
-        );
-    }
+    let size = tag2_from_height(height);
+    draw_multiline_mid_string(
+        tmp,
+        &globals::FONT_TAG2,
+        size,
+        tag2_position,
+        original_height,
+        tag2,
+    );
 
     let size = tag_from_height(height);
     for (index, line) in tag.lines().enumerate() {
@@ -385,6 +405,40 @@ fn draw_layer_and_text(
             line,
         );
     }
+}
+
+pub(crate) fn draw_multiline_mid_string(
+    tmp: &mut DynamicImage,
+    font: &rusttype::Font,
+    size: f64,
+    position: f64,
+    original_height: f64,
+    text: &str,
+) {
+    let (width, height): (f64, f64) = Coord::from(tmp.dimensions()).into();
+    for (index, line) in text.lines().enumerate() {
+        let (text_width, text_height) =
+            measure_line(font, line, rusttype::Scale::uniform(size as f32));
+
+        imageproc::drawing::draw_text_mut(
+            tmp,
+            image::Rgba([255, 255, 255, 255]),
+            ((width - text_width) / 2.0) as u32,
+            ((position * height) / original_height + index as f64 * (text_height * 1.15)) as u32,
+            rusttype::Scale::uniform(size as f32),
+            font,
+            line,
+        );
+    }
+}
+
+// small hack because 0,0,0 rgb can't be set on theme
+pub(crate) fn set_color_btn_rgba(rgba: [u8; 4], btn: &mut Button) {
+    let [mut r, g, b, _] = rgba;
+    if r == 0 && g == 0 && b == 0 {
+        r = 1;
+    }
+    btn.set_color(enums::Color::from_rgb(r, g, b));
 }
 
 pub(crate) fn croped_ratio(width: f64, height: f64) -> (f64, f64) {
@@ -413,8 +467,16 @@ pub(crate) fn subquote_from_height(height: f64) -> f64 {
     (height * globals::CONFIG.read().unwrap().subquote_font_ratio) / 5000.0
 }
 
+pub(crate) fn subquote2_from_height(height: f64) -> f64 {
+    (height * globals::CONFIG.read().unwrap().subquote2_font_ratio) / 5000.0
+}
+
 pub(crate) fn tag_from_height(height: f64) -> f64 {
     (height * globals::CONFIG.read().unwrap().tag_font_ratio) / 5000.0
+}
+
+pub(crate) fn tag2_from_height(height: f64) -> f64 {
+    (height * globals::CONFIG.read().unwrap().tag2_font_ratio) / 5000.0
 }
 
 pub(crate) fn measure_line(

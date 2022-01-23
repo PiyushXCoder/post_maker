@@ -31,9 +31,33 @@ lazy_static! {
         }
         rusttype::Font::try_from_vec(include_bytes!("../Rajdhani-Regular.ttf").to_vec()).unwrap()
     };
+    pub static ref FONT_SUBQUOTE2: Font<'static> = {
+        let mut buffer = Vec::new();
+        if let Ok(mut file) =
+            std::fs::File::open(CONFIG.read().unwrap().subquote2_font_ttf.as_str())
+        {
+            if let Ok(_) = file.read_to_end(&mut buffer) {
+                if let Some(out) = rusttype::Font::try_from_vec(buffer) {
+                    return out;
+                }
+            }
+        }
+        rusttype::Font::try_from_vec(include_bytes!("../Rajdhani-Regular.ttf").to_vec()).unwrap()
+    };
     pub static ref FONT_TAG: Font<'static> = {
         let mut buffer = Vec::new();
         if let Ok(mut file) = std::fs::File::open(&CONFIG.read().unwrap().tag_font_ttf.as_str()) {
+            if let Ok(_) = file.read_to_end(&mut buffer) {
+                if let Some(out) = rusttype::Font::try_from_vec(buffer) {
+                    return out;
+                }
+            }
+        }
+        rusttype::Font::try_from_vec(include_bytes!("../Kalam-Regular.ttf").to_vec()).unwrap()
+    };
+    pub static ref FONT_TAG2: Font<'static> = {
+        let mut buffer = Vec::new();
+        if let Ok(mut file) = std::fs::File::open(&CONFIG.read().unwrap().tag2_font_ttf.as_str()) {
             if let Ok(_) = file.read_to_end(&mut buffer) {
                 if let Some(out) = rusttype::Font::try_from_vec(buffer) {
                     return out;
