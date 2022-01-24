@@ -1,7 +1,7 @@
 # Post Maker
 
 <p align="center">
-    <img alt="actix-web-grants" src="./assets/icon.svg" width="150">
+    <img alt="actix-web-grants" src="./assets/icon_with_text.svg" width="170">
 </p>
 
 > Post Maker helps you to make post for instagram and other social madia apps easily
