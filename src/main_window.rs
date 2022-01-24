@@ -1,3 +1,17 @@
+/*
+    This file is part of Post Maker.
+    Post Maker is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    Post Maker is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    You should have received a copy of the GNU General Public License
+    along with Post Maker.  If not, see <https://www.gnu.org/licenses/>
+*/
+
 use crate::crop_window::CropWindow;
 use crate::draw_thread::*;
 use crate::utils;
@@ -428,7 +442,7 @@ impl MainWindow {
             menu::MenuFlag::Normal,
             move |_| {
                 if config_window.show() {
-                    sender.send(DrawMessage::Recalc).unwrap();
+                    sender.send(DrawMessage::RedrawToBuffer).unwrap();
                     sender.send(DrawMessage::Flush).unwrap();
                     image.redraw();
                 }
@@ -490,7 +504,7 @@ impl MainWindow {
             prop.is_saved = false;
             utils::set_color_btn_rgba(color, &mut layer_rgb);
             layer_alpha.set_value(color[3] as f64);
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -509,7 +523,7 @@ impl MainWindow {
             quote_position.set_value(pos);
             quote_position_slider.set_value(pos);
 
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -528,7 +542,7 @@ impl MainWindow {
             subquote_position.set_value(pos);
             subquote_position_slider.set_value(pos);
 
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -547,7 +561,7 @@ impl MainWindow {
             subquote2_position.set_value(pos);
             subquote2_position_slider.set_value(pos);
 
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -566,7 +580,7 @@ impl MainWindow {
             tag_position.set_value(pos);
             tag_position_slider.set_value(pos);
 
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -585,7 +599,7 @@ impl MainWindow {
             tag2_position.set_value(pos);
             tag2_position_slider.set_value(pos);
 
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -704,7 +718,7 @@ impl MainWindow {
                 let mut prop = properties.write().unwrap();
                 prop.quote = f.value();
                 prop.is_saved = false;
-                sender.send(DrawMessage::Recalc).unwrap();
+                sender.send(DrawMessage::RedrawToBuffer).unwrap();
                 sender.send(DrawMessage::Flush).unwrap();
                 image.redraw();
             }
@@ -719,7 +733,7 @@ impl MainWindow {
                 let mut prop = properties.write().unwrap();
                 prop.subquote = f.value();
                 prop.is_saved = false;
-                sender.send(DrawMessage::Recalc).unwrap();
+                sender.send(DrawMessage::RedrawToBuffer).unwrap();
                 sender.send(DrawMessage::Flush).unwrap();
                 image.redraw();
             }
@@ -734,7 +748,7 @@ impl MainWindow {
                 let mut prop = properties.write().unwrap();
                 prop.subquote2 = f.value();
                 prop.is_saved = false;
-                sender.send(DrawMessage::Recalc).unwrap();
+                sender.send(DrawMessage::RedrawToBuffer).unwrap();
                 sender.send(DrawMessage::Flush).unwrap();
                 image.redraw();
             }
@@ -749,7 +763,7 @@ impl MainWindow {
                 let mut prop = properties.write().unwrap();
                 prop.tag = f.value();
                 prop.is_saved = false;
-                sender.send(DrawMessage::Recalc).unwrap();
+                sender.send(DrawMessage::RedrawToBuffer).unwrap();
                 sender.send(DrawMessage::Flush).unwrap();
                 image.redraw();
             }
@@ -764,7 +778,7 @@ impl MainWindow {
                 let mut prop = properties.write().unwrap();
                 prop.tag2 = f.value();
                 prop.is_saved = false;
-                sender.send(DrawMessage::Recalc).unwrap();
+                sender.send(DrawMessage::RedrawToBuffer).unwrap();
                 sender.send(DrawMessage::Flush).unwrap();
                 image.redraw();
             }
@@ -780,7 +794,7 @@ impl MainWindow {
             prop.quote_position = f.value();
             quote_position_slider.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -794,7 +808,7 @@ impl MainWindow {
             prop.quote_position = f.value();
             quote_position.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -808,7 +822,7 @@ impl MainWindow {
             prop.subquote_position = f.value();
             subquote_position_slider.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -822,7 +836,7 @@ impl MainWindow {
             prop.subquote_position = f.value();
             subquote_position.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -836,7 +850,7 @@ impl MainWindow {
             prop.subquote2_position = f.value();
             subquote2_position_slider.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -850,7 +864,7 @@ impl MainWindow {
             prop.subquote2_position = f.value();
             subquote2_position.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -864,7 +878,7 @@ impl MainWindow {
             prop.tag_position = f.value();
             tag_position_slider.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -878,7 +892,7 @@ impl MainWindow {
             prop.tag_position = f.value();
             tag_position.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -892,7 +906,7 @@ impl MainWindow {
             prop.tag2_position = f.value();
             tag2_position_slider.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -906,7 +920,7 @@ impl MainWindow {
             prop.tag2_position = f.value();
             tag2_position.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -924,7 +938,7 @@ impl MainWindow {
             utils::set_color_btn_rgba(prop.rgba, &mut f);
             f.redraw();
             prop.is_saved = false;
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
@@ -936,7 +950,7 @@ impl MainWindow {
             let mut prop = properties.write().unwrap();
             prop.rgba[3] = f.value() as u8;
             prop.is_saved = false;
-            sender.send(DrawMessage::Recalc).unwrap();
+            sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });

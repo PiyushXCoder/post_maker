@@ -1,3 +1,17 @@
+/*
+    This file is part of Post Maker.
+    Post Maker is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    Post Maker is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    You should have received a copy of the GNU General Public License
+    along with Post Maker.  If not, see <https://www.gnu.org/licenses/>
+*/
+
 //! Thread to manage drawing in background
 
 use crate::{
@@ -32,7 +46,7 @@ pub(crate) enum DrawMessage {
     /// Load file with specific cropped size
     ChangeCrop((f64, f64)),
     /// Recalculate and draw on buffer image in Container
-    Recalc,
+    RedrawToBuffer,
     /// Flush buffer to u8 vector present in main, to draw on screen
     Flush,
     /// Save to file
@@ -143,9 +157,9 @@ pub(crate) fn spawn_image_thread(
                     );
                     status.set_label("");
                 }
-                DrawMessage::Recalc => {
+                DrawMessage::RedrawToBuffer => {
                     if let Some(cont) = &mut _container {
-                        cont.recalc();
+                        cont.redraw_to_buffer();
                     }
                 }
                 DrawMessage::Flush => {
@@ -301,9 +315,9 @@ fn load_image(
                         drop(prop);
 
                         match crop {
-                            Some((x, y)) => cont.apply_crop_pos(x, y),
+                            Some((x, y)) => cont.apply_crop_position(x, y),
                             None => match saved_prop.crop_position {
-                                Some((x, y)) => cont.apply_crop_pos(x, y),
+                                Some((x, y)) => cont.apply_crop_position(x, y),
                                 None => cont.apply_crop(),
                             },
                         }
@@ -357,7 +371,7 @@ fn load_image(
                 Some((x, y)) => {
                     prop.is_saved = false;
                     drop(prop);
-                    cont.apply_crop_pos(x, y);
+                    cont.apply_crop_position(x, y);
                 }
                 None => {
                     prop.is_saved = true;
@@ -374,7 +388,7 @@ fn load_image(
         page.row_flex.set_size(&page.col_flex, width as i32);
         page.col_flex.recalc();
         page.row_flex.recalc();
-        cont.recalc();
+        cont.redraw_to_buffer();
     }
     flush_buffer(&app_sender, &container);
 }

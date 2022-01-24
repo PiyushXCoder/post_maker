@@ -1,3 +1,17 @@
+/*
+    This file is part of Post Maker.
+    Post Maker is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    Post Maker is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    You should have received a copy of the GNU General Public License
+    along with Post Maker.  If not, see <https://www.gnu.org/licenses/>
+*/
+
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -10,6 +24,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::globals;
 
+/// helps cast tupels to f64
 pub(crate) struct Coord(pub(crate) f64, pub(crate) f64);
 
 impl From<(i32, i32)> for Coord {
@@ -48,6 +63,7 @@ impl Into<(i32, i32)> for Coord {
     }
 }
 
+/// Contains Image and its buffer(edited image)
 #[derive(Debug, Clone)]
 pub(crate) struct ImageContainer {
     pub(crate) image: DynamicImage,  //plain
@@ -120,7 +136,7 @@ impl ImageContainer {
         self.buffer = self.image.clone();
     }
 
-    pub(crate) fn apply_crop_pos(&mut self, original_x: f64, original_y: f64) {
+    pub(crate) fn apply_crop_position(&mut self, original_x: f64, original_y: f64) {
         let mut prop = self.properties.write().unwrap();
         let (original_width, original_height) = prop.original_dimension;
         prop.crop_position = Some((original_x, original_y));
@@ -140,7 +156,7 @@ impl ImageContainer {
         self.buffer = self.image.clone();
     }
 
-    pub(crate) fn recalc(&mut self) {
+    pub(crate) fn redraw_to_buffer(&mut self) {
         let prop = self.properties.read().unwrap();
         let mut tmp = self.image.clone();
 
