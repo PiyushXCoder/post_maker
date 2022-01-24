@@ -160,14 +160,18 @@ impl ConfigFile {
             };
 
             let default_config = (&*globals::CONFIG_NAME.read().unwrap()).to_string();
-            let config_name =
-                if (map.len() > 1 || !map.contains_key(&default_config)) && map.len() != 0 {
-                    ConfigPicker::new(map.keys().map(|a| a.to_owned()).collect())
-                        .selected()
-                        .unwrap_or(default_config)
-                } else {
-                    default_config
-                };
+            let config_name = if (map.len() > 1 || !map.contains_key(&default_config))
+                && map.len() != 0
+            {
+                let picked = ConfigPicker::new(map.keys().map(|a| a.to_owned()).collect()).selected;
+                let picked = picked.borrow();
+                match &*picked {
+                    Some(v) => v.to_owned(),
+                    None => std::process::exit(0),
+                }
+            } else {
+                default_config
+            };
 
             if let Some(config) = map.get(&config_name) {
                 *globals::CONFIG_NAME.write().unwrap() = config_name;

@@ -12,6 +12,8 @@
     along with Post Maker.  If not, see <https://www.gnu.org/licenses/>
 */
 
+use std::{cell::RefCell, rc::Rc};
+
 use crate::globals;
 use fltk::{
     app,
@@ -26,9 +28,9 @@ use fltk::{
 
 pub(crate) struct ConfigPicker {
     pub(crate) win: Window,
+    pub(crate) selected: Rc<RefCell<Option<String>>>,
     pub(crate) browse: Browser,
     pub(crate) apply_btn: Button,
-    pub(crate) configs: Vec<String>,
 }
 
 impl ConfigPicker {
@@ -72,9 +74,9 @@ impl ConfigPicker {
 
         let mut config_picker = Self {
             win,
+            selected: Rc::new(RefCell::new(browse.selected_text())),
             browse,
             apply_btn,
-            configs,
         };
         config_picker.event();
 
@@ -90,14 +92,16 @@ impl ConfigPicker {
         self.apply_btn.set_callback(move |_| {
             win.hide();
         });
-    }
 
-    pub(crate) fn selected(&self) -> Option<String> {
-        let idx = self.browse.value();
-        if idx == 0 {
-            None
-        } else {
-            self.configs.get(idx as usize - 1).map(|a| a.to_owned())
-        }
+        let selected = Rc::clone(&self.selected);
+        self.browse.set_callback(move |f| {
+            *selected.borrow_mut() = f.selected_text();
+        });
+
+        let selected = Rc::clone(&self.selected);
+        self.win.set_callback(move |f| {
+            *selected.borrow_mut() = None;
+            f.hide();
+        });
     }
 }
