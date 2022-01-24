@@ -1,24 +1,33 @@
-//! load, save configuration and parse cli args
-
+///! load, save configuration and parse cli args
 use crate::{config_picker::ConfigPicker, globals};
 use clap::{ArgEnum, Parser};
 use fltk::dialog;
 use fltk_theme::ThemeType;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, fs::File, path::PathBuf};
 
 lazy_static! {
-    pub static ref CONFIG_PATH: PathBuf = {
-        match dirs::config_dir() {
-            Some(path) => path.join("post_maker.config"),
+    static ref CONFIG_DIR: PathBuf = {
+        let dir = match dirs::config_dir() {
+            Some(path) => path,
             None => std::env::current_exe()
                 .unwrap()
                 .parent()
                 .unwrap()
-                .join("post_maker.config"),
+                .to_owned(),
         }
+        .join("post_maker");
+        if !dir.exists() {
+            if let Err(e) = std::fs::create_dir(&dir) {
+                dialog::alert_default("Failed to create config dir!");
+                panic!("Failed to create config dir!\n{:?}", e);
+            }
+        }
+        dir
     };
+    static ref CONFIG_FILE: PathBuf = CONFIG_DIR.join("post_maker.config");
+    static ref LOG_PATH: PathBuf = CONFIG_DIR.join("post_maker.log");
 }
 
 /// Simple program calculate size of stuff in quote image
@@ -31,7 +40,7 @@ pub(crate) struct Args {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ArgEnum)]
-pub enum Themes {
+pub(crate) enum Themes {
     Classic,
     /// Windows 7
     Aero,
@@ -77,24 +86,24 @@ impl Into<ThemeType> for Themes {
 
 /// Configuation file
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConfigFile {
-    pub quote_font_ttf: String,
-    pub subquote_font_ttf: String,
-    pub subquote2_font_ttf: String,
-    pub tag_font_ttf: String,
-    pub tag2_font_ttf: String,
-    pub quote_font_ratio: f64,
-    pub subquote_font_ratio: f64,
-    pub subquote2_font_ratio: f64,
-    pub tag_font_ratio: f64,
-    pub tag2_font_ratio: f64,
-    pub quote_position_ratio: f64,
-    pub subquote_position_ratio: f64,
-    pub subquote2_position_ratio: f64,
-    pub tag_position_ratio: f64,
-    pub tag2_position_ratio: f64,
-    pub image_ratio: (f64, f64),
-    pub color_layer: [u8; 4],
+pub(crate) struct ConfigFile {
+    pub(crate) quote_font_ttf: String,
+    pub(crate) subquote_font_ttf: String,
+    pub(crate) subquote2_font_ttf: String,
+    pub(crate) tag_font_ttf: String,
+    pub(crate) tag2_font_ttf: String,
+    pub(crate) quote_font_ratio: f64,
+    pub(crate) subquote_font_ratio: f64,
+    pub(crate) subquote2_font_ratio: f64,
+    pub(crate) tag_font_ratio: f64,
+    pub(crate) tag2_font_ratio: f64,
+    pub(crate) quote_position_ratio: f64,
+    pub(crate) subquote_position_ratio: f64,
+    pub(crate) subquote2_position_ratio: f64,
+    pub(crate) tag_position_ratio: f64,
+    pub(crate) tag2_position_ratio: f64,
+    pub(crate) image_ratio: (f64, f64),
+    pub(crate) color_layer: [u8; 4],
 }
 
 impl Default for ConfigFile {
@@ -112,9 +121,9 @@ impl Default for ConfigFile {
             tag2_font_ratio: 150.0,
             quote_position_ratio: 0.7,
             subquote_position_ratio: 0.8,
-            subquote2_position_ratio: 0.8,
+            subquote2_position_ratio: 0.9,
             tag_position_ratio: 0.5,
-            tag2_position_ratio: 0.5,
+            tag2_position_ratio: 0.95,
             image_ratio: (4.0, 5.0),
             color_layer: [20, 22, 25, 197],
         }
@@ -123,8 +132,7 @@ impl Default for ConfigFile {
 
 impl ConfigFile {
     pub(crate) fn load() -> Self {
-        // config_picker::ConfigPicker::new();
-        if CONFIG_PATH.exists() {
+        if CONFIG_FILE.exists() {
             let map = get_configs();
 
             let map = match map {
@@ -160,20 +168,34 @@ impl ConfigFile {
 }
 
 pub(crate) fn get_configs() -> Option<HashMap<String, ConfigFile>> {
-    match std::fs::read_to_string(&*CONFIG_PATH) {
+    match std::fs::read_to_string(&*CONFIG_FILE) {
         Ok(r) => serde_json::from_str::<HashMap<String, ConfigFile>>(&r).ok(),
         Err(_) => None,
     }
 }
 
 pub(crate) fn save_configs(configs: HashMap<String, ConfigFile>) {
-    if let Err(_) = std::fs::write(&*CONFIG_PATH, serde_json::to_string(&configs).unwrap()) {
+    if let Err(e) = std::fs::write(&*CONFIG_FILE, serde_json::to_string(&configs).unwrap()) {
         dialog::alert_default("Can't write config!");
-        eprintln!("Can't write config!");
+        error!("Can't write config!\n{:?}", e);
+        panic!("Can't write config!\n{:?}", e);
     }
 }
 
 pub(crate) fn config() -> Args {
     let args = Args::parse();
     args
+}
+
+pub(crate) fn log_file() -> File {
+    match File::open(&*LOG_PATH) {
+        Ok(f) => f,
+        Err(_) => match File::create(&*LOG_PATH) {
+            Ok(f) => f,
+            Err(e) => {
+                dialog::alert_default("Can't open log file!");
+                panic!("{:?}", e)
+            }
+        },
+    }
 }

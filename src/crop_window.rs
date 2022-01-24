@@ -16,7 +16,7 @@ use std::{
 
 /// Window to crop the existing image
 pub(crate) struct CropWindow {
-    pub win: Window,
+    pub(crate) win: Window,
     apply_btn: Button,
     container: Rc<RefCell<Option<ImageContainer>>>,
     page: Page,

@@ -7,6 +7,8 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "3.0", features = ["derive"] }
+log = "0.4"
+simplelog = "0.11"
 fltk = "1.2"
 fltk-theme = "0.4"
 image = "0.23"

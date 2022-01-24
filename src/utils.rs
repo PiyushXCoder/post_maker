@@ -59,9 +59,10 @@ impl ImageContainer {
     pub(crate) fn new(path: &PathBuf, properties: Arc<RwLock<ImageProperties>>) -> Self {
         let img = match image::open(path) {
             Ok(i) => i,
-            Err(_) => {
+            Err(e) => {
                 dialog::alert_default("Failed to open image!");
-                panic!("Failed to open image");
+                error!("Failed to open image\n{:?}", e);
+                panic!("Failed to open image\n{:?}", e);
             }
         };
 
@@ -181,8 +182,9 @@ impl ImageContainer {
 
         let mut prop = prop.clone();
         prop.path = None;
-        if fs::write(&path_conf, serde_json::to_string(&prop).unwrap()).is_err() {
+        if let Err(e) = fs::write(&path_conf, serde_json::to_string(&prop).unwrap()) {
             dialog::alert_default("Failed to save conf!");
+            warn!("Failed to save conf!\n{:?}", e);
         }
 
         let mut img = image::open(&path_original).unwrap();
@@ -212,11 +214,9 @@ impl ImageContainer {
             prop.original_dimension.1,
         );
 
-        if img
-            .save_with_format(&export, image::ImageFormat::Png)
-            .is_err()
-        {
+        if let Err(e) = img.save_with_format(&export, image::ImageFormat::Png) {
             dialog::alert_default("Failed to export png!");
+            warn!("Failed to export png!\n{:?}", e);
         }
     }
 
@@ -238,14 +238,19 @@ impl ImageContainer {
                 let path_conf = path.with_extension("conf");
                 let path_conf_new = new_path.with_extension("conf");
 
-                if path.exists() && fs::copy(path, &new_path).is_err() {
-                    dialog::alert_default("Failed to clone image!");
-                    return None;
+                if path.exists() {
+                    if let Err(e) = fs::copy(path, &new_path) {
+                        dialog::alert_default("Failed to clone image!");
+                        warn!("Failed to clone image!\n{:?}", e);
+                        return None;
+                    }
                 }
 
-                if path_conf.exists() && fs::copy(path_conf, &path_conf_new).is_err() {
-                    dialog::alert_default("Failed to clone image!");
-                    return None;
+                if path_conf.exists() {
+                    if let Err(e) = fs::copy(path_conf, &path_conf_new) {
+                        dialog::alert_default("Failed to clone image!");
+                        warn!("Failed to clone image!\n{:?}", e);
+                    }
                 }
                 Some(new_path)
             }
@@ -270,16 +275,25 @@ impl ImageContainer {
                 .unwrap(),
         );
 
-        if path_original.exists() && fs::remove_file(path_original).is_err() {
-            dialog::alert_default("Failed to delete image!");
+        if path_original.exists() {
+            if let Err(e) = fs::remove_file(path_original) {
+                dialog::alert_default("Failed to delete image!");
+                warn!("Failed to delete image!\n{:?}", e);
+            }
         }
 
-        if path_conf.exists() && fs::remove_file(path_conf).is_err() {
-            dialog::alert_default("Failed to delete image conf!");
+        if path_conf.exists() {
+            if let Err(e) = fs::remove_file(path_conf) {
+                dialog::alert_default("Failed to delete image conf!");
+                warn!("Failed to delete image conf!\n{:?}", e);
+            }
         }
 
-        if export.exists() && fs::remove_file(export).is_err() {
-            dialog::alert_default("Failed to delete exported image!");
+        if export.exists() {
+            if let Err(e) = fs::remove_file(export) {
+                dialog::alert_default("Failed to delete exported image!");
+                warn!("Failed to delete exported image!\n{:?}", e);
+            }
         }
     }
 }

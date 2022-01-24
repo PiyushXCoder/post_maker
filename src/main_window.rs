@@ -396,8 +396,9 @@ impl MainWindow {
                 }
                 let expost_dir = path.join("export");
                 if !expost_dir.exists() {
-                    if let Err(_) = fs::create_dir(expost_dir) {
-                        fltk::dialog::alert_default("Failed: create export folder!");
+                    if let Err(e) = fs::create_dir(expost_dir) {
+                        fltk::dialog::alert_default("Failed to create export folder!");
+                        warn!("Failed to create export folder!\n{:?}", e);
                         return;
                     }
                 }

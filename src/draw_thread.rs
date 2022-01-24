@@ -8,7 +8,7 @@ use crate::{
 use fltk::{
     app,
     button::Button,
-    enums,
+    dialog, enums,
     frame::Frame,
     input::{Input, MultilineInput},
     menu,
@@ -250,63 +250,70 @@ fn load_image(
         let mut use_defaults = true;
         if conf.exists() {
             let mut prop = properties.write().unwrap();
-            let read = fs::read_to_string(&conf).unwrap();
-            if let Ok(saved_prop) = serde_json::from_str::<ImageProperties>(&read) {
-                utils::set_color_btn_rgba(saved_prop.rgba, layer_rgb);
-                layer_alpha.set_value(saved_prop.rgba[3] as f64);
-                quote.set_value(&saved_prop.quote);
-                subquote.set_value(&saved_prop.subquote);
-                subquote2.set_value(&saved_prop.subquote2);
-                tag.set_value(&saved_prop.tag);
-                tag2.set_value(&saved_prop.tag2);
-                quote_position.set_range(0.0, prop.original_dimension.1);
-                quote_position.set_value(saved_prop.quote_position);
-                subquote_position.set_range(0.0, prop.original_dimension.1);
-                subquote_position.set_value(saved_prop.subquote_position);
-                subquote2_position.set_range(0.0, prop.original_dimension.1);
-                subquote2_position.set_value(saved_prop.subquote2_position);
-                tag_position.set_range(0.0, prop.original_dimension.1);
-                tag_position.set_value(saved_prop.tag_position);
-                tag2_position.set_range(0.0, prop.original_dimension.1);
-                tag2_position.set_value(saved_prop.tag2_position);
-                quote_position_slider.set_range(0.0, prop.original_dimension.1);
-                subquote_position_slider.set_range(0.0, prop.original_dimension.1);
-                subquote2_position_slider.set_range(0.0, prop.original_dimension.1);
-                quote_position_slider.set_value(saved_prop.quote_position);
-                subquote_position_slider.set_value(saved_prop.subquote_position);
-                subquote2_position_slider.set_value(saved_prop.subquote2_position);
-                tag_position_slider.set_range(0.0, prop.original_dimension.1);
-                tag_position_slider.set_value(saved_prop.tag_position);
-                tag2_position_slider.set_range(0.0, prop.original_dimension.1);
-                tag2_position_slider.set_value(saved_prop.tag2_position);
-                dimension.set_label(&format!(
-                    "[{}x{}]",
-                    prop.original_dimension.0, prop.original_dimension.1
-                ));
+            match fs::read_to_string(&conf) {
+                Ok(read) => {
+                    if let Ok(saved_prop) = serde_json::from_str::<ImageProperties>(&read) {
+                        utils::set_color_btn_rgba(saved_prop.rgba, layer_rgb);
+                        layer_alpha.set_value(saved_prop.rgba[3] as f64);
+                        quote.set_value(&saved_prop.quote);
+                        subquote.set_value(&saved_prop.subquote);
+                        subquote2.set_value(&saved_prop.subquote2);
+                        tag.set_value(&saved_prop.tag);
+                        tag2.set_value(&saved_prop.tag2);
+                        quote_position.set_range(0.0, prop.original_dimension.1);
+                        quote_position.set_value(saved_prop.quote_position);
+                        subquote_position.set_range(0.0, prop.original_dimension.1);
+                        subquote_position.set_value(saved_prop.subquote_position);
+                        subquote2_position.set_range(0.0, prop.original_dimension.1);
+                        subquote2_position.set_value(saved_prop.subquote2_position);
+                        tag_position.set_range(0.0, prop.original_dimension.1);
+                        tag_position.set_value(saved_prop.tag_position);
+                        tag2_position.set_range(0.0, prop.original_dimension.1);
+                        tag2_position.set_value(saved_prop.tag2_position);
+                        quote_position_slider.set_range(0.0, prop.original_dimension.1);
+                        subquote_position_slider.set_range(0.0, prop.original_dimension.1);
+                        subquote2_position_slider.set_range(0.0, prop.original_dimension.1);
+                        quote_position_slider.set_value(saved_prop.quote_position);
+                        subquote_position_slider.set_value(saved_prop.subquote_position);
+                        subquote2_position_slider.set_value(saved_prop.subquote2_position);
+                        tag_position_slider.set_range(0.0, prop.original_dimension.1);
+                        tag_position_slider.set_value(saved_prop.tag_position);
+                        tag2_position_slider.set_range(0.0, prop.original_dimension.1);
+                        tag2_position_slider.set_value(saved_prop.tag2_position);
+                        dimension.set_label(&format!(
+                            "[{}x{}]",
+                            prop.original_dimension.0, prop.original_dimension.1
+                        ));
 
-                prop.quote = saved_prop.quote;
-                prop.subquote = saved_prop.subquote;
-                prop.subquote2 = saved_prop.subquote2;
-                prop.tag = saved_prop.tag;
-                prop.tag2 = saved_prop.tag2;
-                prop.quote_position = saved_prop.quote_position;
-                prop.subquote_position = saved_prop.subquote_position;
-                prop.subquote2_position = saved_prop.subquote2_position;
-                prop.tag_position = saved_prop.tag_position;
-                prop.tag2_position = saved_prop.tag2_position;
-                prop.rgba = saved_prop.rgba;
-                prop.is_saved = true;
-                use_defaults = false;
-                drop(prop);
+                        prop.quote = saved_prop.quote;
+                        prop.subquote = saved_prop.subquote;
+                        prop.subquote2 = saved_prop.subquote2;
+                        prop.tag = saved_prop.tag;
+                        prop.tag2 = saved_prop.tag2;
+                        prop.quote_position = saved_prop.quote_position;
+                        prop.subquote_position = saved_prop.subquote_position;
+                        prop.subquote2_position = saved_prop.subquote2_position;
+                        prop.tag_position = saved_prop.tag_position;
+                        prop.tag2_position = saved_prop.tag2_position;
+                        prop.rgba = saved_prop.rgba;
+                        prop.is_saved = true;
+                        use_defaults = false;
+                        drop(prop);
 
-                match crop {
-                    Some((x, y)) => cont.apply_crop_pos(x, y),
-                    None => match saved_prop.crop_position {
-                        Some((x, y)) => cont.apply_crop_pos(x, y),
-                        None => cont.apply_crop(),
-                    },
+                        match crop {
+                            Some((x, y)) => cont.apply_crop_pos(x, y),
+                            None => match saved_prop.crop_position {
+                                Some((x, y)) => cont.apply_crop_pos(x, y),
+                                None => cont.apply_crop(),
+                            },
+                        }
+                    }
                 }
-            }
+                Err(e) => {
+                    dialog::alert_default("Failed to open config file!");
+                    warn!("Failed to open config file!\n{:?}", e);
+                }
+            };
         }
 
         if use_defaults {
