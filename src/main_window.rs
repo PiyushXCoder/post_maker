@@ -390,6 +390,7 @@ impl MainWindow {
                 chooser.set_option(fltk::dialog::FileDialogOptions::NewFolder);
                 chooser.show();
                 let path = chooser.filename();
+                let path = fs::canonicalize(&path).unwrap_or(path);
                 if !path.exists() {
                     return;
                 }
