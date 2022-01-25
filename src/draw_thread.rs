@@ -15,9 +15,9 @@
 //! Thread to manage drawing in background
 
 use crate::{
-    globals,
     main_window::{MainWindow, Page},
-    utils, AppMessage,
+    utils::{self, ImagePropertiesFile},
+    AppMessage,
 };
 use fltk::{
     app,
@@ -119,7 +119,7 @@ pub(crate) fn spawn_image_thread(
                         &mut count,
                         &mut dimension,
                         &app_sender,
-                        &properties,
+                        Arc::clone(&properties),
                         &mut _container,
                     );
                     status.set_label("");
@@ -152,7 +152,7 @@ pub(crate) fn spawn_image_thread(
                         &mut count,
                         &mut dimension,
                         &app_sender,
-                        &properties,
+                        Arc::clone(&properties),
                         &mut _container,
                     );
                     status.set_label("");
@@ -242,7 +242,7 @@ fn load_image(
     count: &mut Frame,
     dimension: &mut Frame,
     app_sender: &app::Sender<crate::AppMessage>,
-    properties: &Arc<RwLock<ImageProperties>>,
+    properties: Arc<RwLock<ImageProperties>>,
     container: &mut Option<ImageContainer>,
 ) {
     let imgs = images_path.read().unwrap();
@@ -254,136 +254,85 @@ fn load_image(
     count.set_label(&format!("[{}/{}]", file_choice.value() + 1, imgs.len()));
     let file = imgs.get(file_choice.value() as usize).unwrap();
 
-    *container = Some(ImageContainer::new(&file, Arc::clone(properties)));
+    *container = Some(ImageContainer::new(&file, Arc::clone(&properties)));
 
     if let Some(cont) = container {
         let file = Path::new(&file);
         let conf = file.with_extension("conf");
 
-        let properties = Arc::clone(&cont.properties);
-        let mut use_defaults = true;
-        if conf.exists() {
-            let mut prop = properties.write().unwrap();
-            match fs::read_to_string(&conf) {
-                Ok(read) => {
-                    if let Ok(saved_prop) = serde_json::from_str::<ImageProperties>(&read) {
-                        utils::set_color_btn_rgba(saved_prop.rgba, layer_rgb);
-                        layer_alpha.set_value(saved_prop.rgba[3] as f64);
-                        quote.set_value(&saved_prop.quote);
-                        subquote.set_value(&saved_prop.subquote);
-                        subquote2.set_value(&saved_prop.subquote2);
-                        tag.set_value(&saved_prop.tag);
-                        tag2.set_value(&saved_prop.tag2);
-                        quote_position.set_range(0.0, prop.original_dimension.1);
-                        quote_position.set_value(saved_prop.quote_position);
-                        subquote_position.set_range(0.0, prop.original_dimension.1);
-                        subquote_position.set_value(saved_prop.subquote_position);
-                        subquote2_position.set_range(0.0, prop.original_dimension.1);
-                        subquote2_position.set_value(saved_prop.subquote2_position);
-                        tag_position.set_range(0.0, prop.original_dimension.1);
-                        tag_position.set_value(saved_prop.tag_position);
-                        tag2_position.set_range(0.0, prop.original_dimension.1);
-                        tag2_position.set_value(saved_prop.tag2_position);
-                        quote_position_slider.set_range(0.0, prop.original_dimension.1);
-                        subquote_position_slider.set_range(0.0, prop.original_dimension.1);
-                        subquote2_position_slider.set_range(0.0, prop.original_dimension.1);
-                        quote_position_slider.set_value(saved_prop.quote_position);
-                        subquote_position_slider.set_value(saved_prop.subquote_position);
-                        subquote2_position_slider.set_value(saved_prop.subquote2_position);
-                        tag_position_slider.set_range(0.0, prop.original_dimension.1);
-                        tag_position_slider.set_value(saved_prop.tag_position);
-                        tag2_position_slider.set_range(0.0, prop.original_dimension.1);
-                        tag2_position_slider.set_value(saved_prop.tag2_position);
-                        dimension.set_label(&format!(
-                            "[{}x{}]",
-                            prop.original_dimension.0, prop.original_dimension.1
-                        ));
-
-                        prop.quote = saved_prop.quote;
-                        prop.subquote = saved_prop.subquote;
-                        prop.subquote2 = saved_prop.subquote2;
-                        prop.tag = saved_prop.tag;
-                        prop.tag2 = saved_prop.tag2;
-                        prop.quote_position = saved_prop.quote_position;
-                        prop.subquote_position = saved_prop.subquote_position;
-                        prop.subquote2_position = saved_prop.subquote2_position;
-                        prop.tag_position = saved_prop.tag_position;
-                        prop.tag2_position = saved_prop.tag2_position;
-                        prop.rgba = saved_prop.rgba;
-                        prop.is_saved = true;
-                        use_defaults = false;
-                        drop(prop);
-
-                        match crop {
-                            Some((x, y)) => cont.apply_crop_position(x, y),
-                            None => match saved_prop.crop_position {
-                                Some((x, y)) => cont.apply_crop_position(x, y),
-                                None => cont.apply_crop(),
-                            },
+        let read = fs::read_to_string(&conf).unwrap_or("{}".to_owned());
+        let read = match serde_json::from_str::<ImagePropertiesFile>(&read) {
+            Ok(r) => r,
+            Err(e) => {
+                warn!("Config is corrupt\n{:?}", e);
+                match dialog::choice_default("Config is corrupt, fix??", "yes", "no", "") {
+                    1 => {
+                        if let Err(e) = fs::remove_file(&conf) {
+                            dialog::alert_default("Failed to delete image properties file!");
+                            warn!("Failed to delete image properties file!\n{:?}", e);
                         }
+                        ImagePropertiesFile::default()
                     }
-                }
-                Err(e) => {
-                    dialog::alert_default("Failed to open config file!");
-                    warn!("Failed to open config file!\n{:?}", e);
-                }
-            };
-        }
-
-        if use_defaults {
-            let mut prop = properties.write().unwrap();
-            if crop.is_none() {
-                quote.set_value("");
-                prop.quote = "".to_owned();
-                subquote.set_value("");
-                prop.subquote = "".to_owned();
-                subquote2.set_value("");
-                prop.subquote2 = "".to_owned();
-            }
-            quote_position.set_range(0.0, prop.original_dimension.1);
-            quote_position.set_value(prop.quote_position);
-            subquote_position.set_range(0.0, prop.original_dimension.1);
-            subquote_position.set_value(prop.subquote_position);
-            subquote2_position.set_range(0.0, prop.original_dimension.1);
-            subquote2_position.set_value(prop.subquote2_position);
-            tag_position.set_range(0.0, prop.original_dimension.1);
-            tag_position.set_value(prop.tag_position);
-            tag2_position.set_range(0.0, prop.original_dimension.1);
-            tag2_position.set_value(prop.tag2_position);
-            quote_position_slider.set_range(0.0, prop.original_dimension.1);
-            quote_position_slider.set_value(prop.quote_position);
-            subquote_position_slider.set_range(0.0, prop.original_dimension.1);
-            subquote_position_slider.set_value(prop.subquote_position);
-            subquote2_position_slider.set_range(0.0, prop.original_dimension.1);
-            subquote2_position_slider.set_value(prop.subquote2_position);
-            tag_position_slider.set_range(0.0, prop.original_dimension.1);
-            tag_position_slider.set_value(prop.tag_position);
-            tag2_position_slider.set_range(0.0, prop.original_dimension.1);
-            tag2_position_slider.set_value(prop.tag2_position);
-
-            let glob = &globals::CONFIG.read().unwrap();
-            utils::set_color_btn_rgba(glob.color_layer, layer_rgb);
-            layer_alpha.set_value(glob.color_layer[3] as f64);
-            prop.rgba = glob.color_layer;
-            drop(glob);
-
-            match crop {
-                Some((x, y)) => {
-                    prop.is_saved = false;
-                    drop(prop);
-                    cont.apply_crop_position(x, y);
-                }
-                None => {
-                    prop.is_saved = true;
-                    drop(prop);
-                    cont.apply_crop();
+                    _ => return,
                 }
             }
+        };
+
+        let mut properties = cont.properties.write().unwrap();
+        properties.merge(read, &tag.value(), &tag2.value());
+        properties.is_saved = true;
+
+        quote.set_value(&properties.quote);
+        subquote.set_value(&properties.subquote);
+        subquote2.set_value(&properties.subquote2);
+        tag.set_value(&properties.tag);
+        tag2.set_value(&properties.tag2);
+
+        quote_position.set_range(0.0, properties.original_dimension.1);
+        quote_position.set_value(properties.quote_position);
+        quote_position_slider.set_range(0.0, properties.original_dimension.1);
+        quote_position_slider.set_value(properties.quote_position);
+
+        subquote_position.set_range(0.0, properties.original_dimension.1);
+        subquote_position.set_value(properties.subquote_position);
+        subquote_position_slider.set_range(0.0, properties.original_dimension.1);
+        subquote_position_slider.set_value(properties.subquote_position);
+
+        subquote2_position.set_range(0.0, properties.original_dimension.1);
+        subquote2_position.set_value(properties.subquote2_position);
+        subquote2_position_slider.set_range(0.0, properties.original_dimension.1);
+        subquote2_position_slider.set_value(properties.subquote2_position);
+
+        tag_position.set_range(0.0, properties.original_dimension.1);
+        tag_position.set_value(properties.tag_position);
+        tag_position_slider.set_range(0.0, properties.original_dimension.1);
+        tag_position_slider.set_value(properties.tag_position);
+
+        tag2_position.set_range(0.0, properties.original_dimension.1);
+        tag2_position.set_value(properties.tag2_position);
+        tag2_position_slider.set_range(0.0, properties.original_dimension.1);
+        tag2_position_slider.set_value(properties.tag2_position);
+
+        utils::set_color_btn_rgba(properties.color_layer, layer_rgb);
+        layer_alpha.set_value(properties.color_layer[3] as f64);
+
+        dimension.set_label(&format!(
+            "[{}x{}]",
+            properties.original_dimension.0, properties.original_dimension.1
+        ));
+
+        let crop_position = properties.crop_position;
+        drop(properties);
+        match crop {
+            Some((x, y)) => cont.apply_crop_position(x, y),
+            None => match crop_position {
+                Some((x, y)) => cont.apply_crop_position(x, y),
+                None => cont.apply_crop(),
+            },
         }
 
         cont.apply_scale();
-        let prop = properties.read().unwrap();
-        let (width, height) = prop.dimension;
+        let (width, height) = cont.properties.read().unwrap().dimension;
         page.col_flex.set_size(&page.image, height as i32);
         page.row_flex.set_size(&page.col_flex, width as i32);
         page.col_flex.recalc();

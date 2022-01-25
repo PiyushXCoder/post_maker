@@ -107,7 +107,7 @@ impl CropWindow {
         crop_pos: Option<(f64, f64)>,
     ) -> Option<(f64, f64)> {
         let mut container =
-            ImageContainer::new(path, Arc::new(RwLock::new(ImageProperties::new())));
+            ImageContainer::new(path, Arc::new(RwLock::new(ImageProperties::default())));
         {
             let prop = &mut container.properties.write().unwrap();
             prop.dimension = prop.original_dimension;

@@ -335,7 +335,7 @@ impl MainWindow {
         win.make_resizable(true);
         win.show();
 
-        let properties = Arc::new(RwLock::new(ImageProperties::new()));
+        let properties = Arc::new(RwLock::new(ImageProperties::default()));
         let (rx, tx) = std::sync::mpsc::channel();
         let mut main_win = Self {
             win,
@@ -500,7 +500,7 @@ impl MainWindow {
         self.reset_darklayer_btn.set_callback(move |_| {
             let mut prop = properties.write().unwrap();
             let color = globals::CONFIG.read().unwrap().color_layer;
-            prop.rgba = color;
+            prop.color_layer = color;
             prop.is_saved = false;
             utils::set_color_btn_rgba(color, &mut layer_rgb);
             layer_alpha.set_value(color[3] as f64);
@@ -932,10 +932,14 @@ impl MainWindow {
             let (r, g, b) = dialog::color_chooser_with_default(
                 "Pick a colour",
                 dialog::ColorMode::Byte,
-                (prop.rgba[0], prop.rgba[1], prop.rgba[2]),
+                (
+                    prop.color_layer[0],
+                    prop.color_layer[1],
+                    prop.color_layer[2],
+                ),
             );
-            prop.rgba = [r, g, b, prop.rgba[3]];
-            utils::set_color_btn_rgba(prop.rgba, &mut f);
+            prop.color_layer = [r, g, b, prop.color_layer[3]];
+            utils::set_color_btn_rgba(prop.color_layer, &mut f);
             f.redraw();
             prop.is_saved = false;
             sender.send(DrawMessage::RedrawToBuffer).unwrap();
@@ -948,7 +952,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         self.layer_alpha.set_callback(move |f| {
             let mut prop = properties.write().unwrap();
-            prop.rgba[3] = f.value() as u8;
+            prop.color_layer[3] = f.value() as u8;
             prop.is_saved = false;
             sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();

@@ -84,7 +84,6 @@ impl ImageContainer {
 
         let img = DynamicImage::ImageRgb8(img.into_rgb8());
         let (width, height): (f64, f64) = Coord::from(img.dimensions()).into();
-        let (width, height) = (width, height);
 
         let config = globals::CONFIG.read().unwrap();
         let mut prop = properties.write().unwrap();
@@ -162,7 +161,7 @@ impl ImageContainer {
 
         draw_layer_and_text(
             &mut tmp,
-            &prop.rgba,
+            &prop.color_layer,
             &prop.quote,
             &prop.subquote,
             &prop.subquote2,
@@ -198,7 +197,10 @@ impl ImageContainer {
 
         let mut prop = prop.clone();
         prop.path = None;
-        if let Err(e) = fs::write(&path_conf, serde_json::to_string(&prop).unwrap()) {
+        if let Err(e) = fs::write(
+            &path_conf,
+            serde_json::to_string(&ImagePropertiesFile::from(&prop)).unwrap(),
+        ) {
             dialog::alert_default("Failed to save conf!");
             warn!("Failed to save conf!\n{:?}", e);
         }
@@ -216,7 +218,7 @@ impl ImageContainer {
 
         draw_layer_and_text(
             &mut img,
-            &prop.rgba,
+            &prop.color_layer,
             &prop.quote,
             &prop.subquote,
             &prop.subquote2,
@@ -281,7 +283,7 @@ impl ImageContainer {
             Some(p) => Path::new(p),
             None => return,
         };
-        let path_conf = path_original.with_extension("conf");
+        let path_properties = path_original.with_extension("conf");
         let export = path_original.parent().unwrap().join("export").join(
             path_original
                 .with_extension("png")
@@ -298,10 +300,10 @@ impl ImageContainer {
             }
         }
 
-        if path_conf.exists() {
-            if let Err(e) = fs::remove_file(path_conf) {
-                dialog::alert_default("Failed to delete image conf!");
-                warn!("Failed to delete image conf!\n{:?}", e);
+        if path_properties.exists() {
+            if let Err(e) = fs::remove_file(path_properties) {
+                dialog::alert_default("Failed to delete image properties file!");
+                warn!("Failed to delete image properties file!\n{:?}", e);
             }
         }
 
@@ -310,6 +312,66 @@ impl ImageContainer {
                 dialog::alert_default("Failed to delete exported image!");
                 warn!("Failed to delete exported image!\n{:?}", e);
             }
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub(crate) struct ImagePropertiesFile {
+    // pub(crate) dimension: Option<(f64, f64)>,
+    // pub(crate) original_dimension: Option<(f64, f64)>,
+    pub(crate) crop_position: Option<(f64, f64)>,
+    pub(crate) quote: Option<String>,
+    pub(crate) subquote: Option<String>,
+    pub(crate) subquote2: Option<String>,
+    pub(crate) tag: Option<String>,
+    pub(crate) tag2: Option<String>,
+    pub(crate) quote_position: Option<f64>, // as per original
+    pub(crate) subquote_position: Option<f64>, // as per original
+    pub(crate) subquote2_position: Option<f64>, // as per original
+    pub(crate) tag_position: Option<f64>,   // as per original
+    pub(crate) tag2_position: Option<f64>,  // as per original
+    pub(crate) color_layer: Option<[u8; 4]>,
+}
+
+impl Default for ImagePropertiesFile {
+    fn default() -> Self {
+        Self {
+            // dimension: None,
+            // original_dimension: None,
+            crop_position: None,
+            quote: None,
+            subquote: None,
+            subquote2: None,
+            tag: None,
+            tag2: None,
+            quote_position: None,
+            subquote_position: None,
+            subquote2_position: None,
+            tag_position: None,
+            tag2_position: None,
+            color_layer: None,
+        }
+    }
+}
+
+impl From<&ImageProperties> for ImagePropertiesFile {
+    fn from(props: &ImageProperties) -> Self {
+        Self {
+            // dimension: Some(props.dimension),
+            // original_dimension: Some(props.original_dimension),
+            crop_position: props.crop_position,
+            quote: Some(props.quote.clone()),
+            subquote: Some(props.subquote.clone()),
+            subquote2: Some(props.subquote2.clone()),
+            tag: Some(props.tag.clone()),
+            tag2: Some(props.tag2.clone()),
+            quote_position: Some(props.quote_position),
+            subquote_position: Some(props.subquote_position),
+            subquote2_position: Some(props.subquote2_position),
+            tag_position: Some(props.tag_position),
+            tag2_position: Some(props.tag2_position),
+            color_layer: Some(props.color_layer),
         }
     }
 }
@@ -330,12 +392,12 @@ pub(crate) struct ImageProperties {
     pub(crate) subquote2_position: f64, // as per original
     pub(crate) tag_position: f64,       // as per original
     pub(crate) tag2_position: f64,      // as per original
-    pub(crate) rgba: [u8; 4],
+    pub(crate) color_layer: [u8; 4],
     pub(crate) is_saved: bool,
 }
 
-impl ImageProperties {
-    pub(crate) fn new() -> Self {
+impl Default for ImageProperties {
+    fn default() -> Self {
         Self {
             path: None,
             dimension: (0.0, 0.0),
@@ -351,9 +413,36 @@ impl ImageProperties {
             subquote2_position: 0.0,
             tag_position: 0.0,
             tag2_position: 0.0,
-            rgba: [0; 4],
+            color_layer: [0; 4],
             is_saved: true,
         }
+    }
+}
+
+impl ImageProperties {
+    pub(crate) fn merge(
+        &mut self,
+        props: ImagePropertiesFile,
+        tag_default: &str,
+        tag2_default: &str,
+    ) {
+        if let Some(v) = props.crop_position {
+            self.crop_position = Some(v);
+        }
+
+        self.quote = props.quote.unwrap_or("".to_owned());
+        self.subquote = props.subquote.unwrap_or("".to_owned());
+        self.subquote2 = props.subquote2.unwrap_or("".to_owned());
+        self.tag = props.tag.unwrap_or(tag_default.to_owned());
+        self.tag2 = props.tag2.unwrap_or(tag2_default.to_owned());
+        self.quote_position = props.quote_position.unwrap_or(self.quote_position);
+        self.subquote_position = props.subquote_position.unwrap_or(self.subquote_position);
+        self.subquote2_position = props.subquote2_position.unwrap_or(self.subquote2_position);
+        self.tag_position = props.tag_position.unwrap_or(self.tag_position);
+        self.tag2_position = props.tag2_position.unwrap_or(self.tag2_position);
+        self.color_layer = props
+            .color_layer
+            .unwrap_or(globals::CONFIG.read().unwrap().color_layer);
     }
 }
 
