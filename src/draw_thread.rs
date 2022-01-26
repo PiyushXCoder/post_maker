@@ -14,6 +14,7 @@
 
 //! Thread to manage drawing in background
 
+use crate::utils::{ImageContainer, ImageProperties};
 use crate::{
     main_window::{MainWindow, Page},
     utils::{self, ImagePropertiesFile},
@@ -30,14 +31,11 @@ use fltk::{
     prelude::*,
     valuator::Slider,
 };
-
 use std::{
     fs,
     path::{Path, PathBuf},
     sync::{mpsc, Arc, RwLock},
 };
-
-use crate::utils::{ImageContainer, ImageProperties};
 
 #[derive(Debug, Clone)]
 pub(crate) enum DrawMessage {
@@ -57,6 +55,7 @@ pub(crate) enum DrawMessage {
     Delete,
 }
 
+/// Spawn thread to manage all actions related to image, like: edit, save, delete
 pub(crate) fn spawn_image_thread(
     reciver: mpsc::Receiver<DrawMessage>,
     app_sender: app::Sender<crate::AppMessage>,
@@ -70,8 +69,8 @@ pub(crate) fn spawn_image_thread(
     let mut subquote2 = main_win.subquote2.clone();
     let mut tag = main_win.tag.clone();
     let mut tag2 = main_win.tag2.clone();
-    let mut layer_rgb = main_win.layer_rgb.clone();
-    let mut layer_alpha = main_win.layer_alpha.clone();
+    let mut layer_rgb = main_win.translucent_layer_rgb.clone();
+    let mut layer_alpha = main_win.translucent_layer_alpha.clone();
     let mut quote_position = main_win.quote_position.clone();
     let mut subquote_position = main_win.subquote_position.clone();
     let mut subquote2_position = main_win.subquote2_position.clone();
@@ -217,6 +216,7 @@ pub(crate) fn spawn_image_thread(
     });
 }
 
+/// Loads the selected image in file_choice to ImageContainer to edit
 fn load_image(
     file_choice: &mut menu::Choice,
     images_path: Arc<RwLock<Vec<PathBuf>>>,
@@ -313,8 +313,8 @@ fn load_image(
         tag2_position_slider.set_range(0.0, properties.original_dimension.1);
         tag2_position_slider.set_value(properties.tag2_position);
 
-        utils::set_color_btn_rgba(properties.color_layer, layer_rgb);
-        layer_alpha.set_value(properties.color_layer[3] as f64);
+        utils::set_color_btn_rgba(properties.translucent_layer_color, layer_rgb);
+        layer_alpha.set_value(properties.translucent_layer_color[3] as f64);
 
         dimension.set_label(&format!(
             "[{}x{}]",
@@ -331,7 +331,7 @@ fn load_image(
             },
         }
 
-        cont.apply_scale();
+        cont.apply_resize();
         let (width, height) = cont.properties.read().unwrap().dimension;
         page.col_flex.set_size(&page.image, height as i32);
         page.row_flex.set_size(&page.col_flex, width as i32);
@@ -342,6 +342,8 @@ fn load_image(
     flush_buffer(&app_sender, &container);
 }
 
+/// Flush the Buffer from image container to drawing buffer for fltk
+// for drawing buffer for fltk (check in main.rs)
 fn flush_buffer(app_sender: &app::Sender<crate::AppMessage>, container: &Option<ImageContainer>) {
     match container {
         Some(cont) => {

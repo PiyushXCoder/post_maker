@@ -12,6 +12,7 @@
     along with Post Maker.  If not, see <https://www.gnu.org/licenses/>
 */
 
+//! Main window where you do all editing
 use crate::crop_window::CropWindow;
 use crate::draw_thread::*;
 use crate::utils;
@@ -44,14 +45,17 @@ pub(crate) struct MainWindow {
     pub(crate) back_btn: Button,
     pub(crate) next_btn: Button,
     pub(crate) save_btn: Button,
+    /// To choose the file which is being edited in directory
     pub(crate) file_choice: menu::Choice,
     pub(crate) quote: MultilineInput,
     pub(crate) subquote: MultilineInput,
     pub(crate) subquote2: MultilineInput,
     pub(crate) tag: Input,
     pub(crate) tag2: Input,
-    pub(crate) layer_rgb: Button,
-    pub(crate) layer_alpha: Spinner,
+    /// RGB value of top translucent layer
+    pub(crate) translucent_layer_rgb: Button,
+    /// opacity value of top translucent layer
+    pub(crate) translucent_layer_alpha: Spinner,
     pub(crate) quote_position: Spinner,
     pub(crate) subquote_position: Spinner,
     pub(crate) subquote2_position: Spinner,
@@ -62,7 +66,7 @@ pub(crate) struct MainWindow {
     pub(crate) subquote2_position_slider: Slider,
     pub(crate) tag_position_slider: Slider,
     pub(crate) tag2_position_slider: Slider,
-    pub(crate) reset_darklayer_btn: Button,
+    pub(crate) reset_translucent_layer_btn: Button,
     pub(crate) reset_quote_position_btn: Button,
     pub(crate) reset_subquote_position_btn: Button,
     pub(crate) reset_subquote2_position_btn: Button,
@@ -82,6 +86,7 @@ pub(crate) struct MainWindow {
     pub(crate) sender: mpsc::Sender<DrawMessage>,
 }
 
+/// Contains the elements to draw page in mid of workspace
 #[derive(Clone)]
 pub(crate) struct Page {
     pub(crate) image: Frame,
@@ -206,27 +211,27 @@ impl MainWindow {
 
         // Controls right
         let mut right_controls_flex = Flex::default().column();
-        let mut darklayer_head_flex = Flex::default().row();
+        let mut translucent_layer_head_flex = Flex::default().row();
         Frame::default()
-            .with_label("Dark Layer (RGBA):")
+            .with_label("Translucent Layer:")
             .with_align(enums::Align::Left | enums::Align::Inside);
         let mut reset_darklayer_btn = Button::default();
         reset_darklayer_btn.set_image(Some(reload_image.clone()));
-        darklayer_head_flex.set_size(&reset_darklayer_btn, 30);
-        darklayer_head_flex.end();
-        right_controls_flex.set_size(&darklayer_head_flex, 30);
+        translucent_layer_head_flex.set_size(&reset_darklayer_btn, 30);
+        translucent_layer_head_flex.end();
+        right_controls_flex.set_size(&translucent_layer_head_flex, 30);
 
-        let mut darklayer_flex = Flex::default().row();
-        darklayer_flex.set_pad(2);
-        darklayer_flex.set_size(&Frame::default().with_label("Colour"), 50);
-        let mut layer_rgb = Button::default();
-        layer_rgb.set_frame(enums::FrameType::BorderBox);
+        let mut translucent_layer_flex = Flex::default().row();
+        translucent_layer_flex.set_pad(2);
+        translucent_layer_flex.set_size(&Frame::default().with_label("Colour"), 50);
+        let mut translucent_layer_rgb = Button::default();
+        translucent_layer_rgb.set_frame(enums::FrameType::BorderBox);
 
-        darklayer_flex.set_size(&Frame::default().with_label("Alpha"), 50);
-        let mut layer_alpha = Spinner::default();
-        layer_alpha.set_range(0.0, 255.0);
-        darklayer_flex.end();
-        right_controls_flex.set_size(&darklayer_flex, 30);
+        translucent_layer_flex.set_size(&Frame::default().with_label("Alpha"), 50);
+        let mut translucent_layer_alpha = Spinner::default();
+        translucent_layer_alpha.set_range(0.0, 255.0);
+        translucent_layer_flex.end();
+        right_controls_flex.set_size(&translucent_layer_flex, 30);
 
         let mut quote_position_flex = Flex::default().row();
         quote_position_flex.set_size(
@@ -349,8 +354,8 @@ impl MainWindow {
             subquote2,
             tag,
             tag2,
-            layer_rgb,
-            layer_alpha,
+            translucent_layer_rgb,
+            translucent_layer_alpha,
             quote_position,
             subquote_position,
             subquote2_position,
@@ -361,7 +366,7 @@ impl MainWindow {
             subquote2_position_slider,
             tag_position_slider,
             tag2_position_slider,
-            reset_darklayer_btn,
+            reset_translucent_layer_btn: reset_darklayer_btn,
             reset_quote_position_btn,
             reset_subquote_position_btn,
             reset_subquote2_position_btn,
@@ -391,6 +396,7 @@ impl MainWindow {
         main_win
     }
 
+    /// Set menubar in window
     fn menu(&mut self) {
         let mut file_choice = self.file_choice.clone();
         let sender = self.sender.clone();
@@ -461,6 +467,7 @@ impl MainWindow {
         );
     }
 
+    /// Set drawing in window
     fn draw(&mut self) {
         let buff = Arc::clone(&self.draw_buff);
         let properties = Arc::clone(&self.properties);
@@ -480,7 +487,9 @@ impl MainWindow {
         })
     }
 
+    /// Set callbacks of elements
     fn events(&mut self) {
+        // Resest Button for FileChoice
         let mut file_choice = self.file_choice.clone();
         let sender = self.sender.clone();
         let imgs = Arc::clone(&self.images_path);
@@ -492,15 +501,16 @@ impl MainWindow {
             load_dir(&path, Arc::clone(&imgs), &mut file_choice, &sender);
         });
 
-        let mut layer_rgb = self.layer_rgb.clone();
-        let mut layer_alpha = self.layer_alpha.clone();
+        // Reset Button for Translucent Layer
+        let mut layer_rgb = self.translucent_layer_rgb.clone();
+        let mut layer_alpha = self.translucent_layer_alpha.clone();
         let mut image = self.page.image.clone();
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
-        self.reset_darklayer_btn.set_callback(move |_| {
+        self.reset_translucent_layer_btn.set_callback(move |_| {
             let mut prop = properties.write().unwrap();
             let color = globals::CONFIG.read().unwrap().color_layer;
-            prop.color_layer = color;
+            prop.translucent_layer_color = color;
             prop.is_saved = false;
             utils::set_color_btn_rgba(color, &mut layer_rgb);
             layer_alpha.set_value(color[3] as f64);
@@ -509,6 +519,7 @@ impl MainWindow {
             image.redraw();
         });
 
+        // Reset Button for Quote Input
         let mut quote_position = self.quote_position.clone();
         let mut quote_position_slider = self.quote_position_slider.clone();
         let mut image = self.page.image.clone();
@@ -528,6 +539,7 @@ impl MainWindow {
             image.redraw();
         });
 
+        // Reset Button for Subquote Input
         let mut subquote_position = self.subquote_position.clone();
         let mut subquote_position_slider = self.subquote_position_slider.clone();
         let mut image = self.page.image.clone();
@@ -547,6 +559,7 @@ impl MainWindow {
             image.redraw();
         });
 
+        // Reset Button for Subquotes2 Input
         let mut subquote2_position = self.subquote2_position.clone();
         let mut subquote2_position_slider = self.subquote2_position_slider.clone();
         let mut image = self.page.image.clone();
@@ -566,6 +579,7 @@ impl MainWindow {
             image.redraw();
         });
 
+        // Reset Button for Tag Input
         let mut tag_position = self.tag_position.clone();
         let mut tag_position_slider = self.tag_position_slider.clone();
         let mut image = self.page.image.clone();
@@ -585,6 +599,7 @@ impl MainWindow {
             image.redraw();
         });
 
+        // Reset Button for Tag2 Input
         let mut tag2_position = self.tag2_position.clone();
         let mut tag2_position_slider = self.tag2_position_slider.clone();
         let mut image = self.page.image.clone();
@@ -604,6 +619,7 @@ impl MainWindow {
             image.redraw();
         });
 
+        // Save Button
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
         self.save_btn.set_callback(move |_| {
@@ -612,6 +628,7 @@ impl MainWindow {
             sender.send(DrawMessage::Save).unwrap()
         });
 
+        // Clone Button
         let mut image = self.page.image.clone();
         let mut file_choice = self.file_choice.clone();
         let sender = self.sender.clone();
@@ -625,6 +642,7 @@ impl MainWindow {
             }
         });
 
+        // Delete Button
         let mut image = self.page.image.clone();
         let mut file_choice = self.file_choice.clone();
         let sender = self.sender.clone();
@@ -638,6 +656,7 @@ impl MainWindow {
             }
         });
 
+        // Crop Button
         let properties = Arc::clone(&self.properties);
         let mut crop_win = CropWindow::new();
         let sender = self.sender.clone();
@@ -651,6 +670,7 @@ impl MainWindow {
             }
         });
 
+        // Next Image Button
         let mut file_choice = self.file_choice.clone();
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
@@ -673,6 +693,7 @@ impl MainWindow {
             sender.send(DrawMessage::Open).unwrap();
         });
 
+        // Back Image Button
         let mut file_choice = self.file_choice.clone();
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
@@ -695,6 +716,7 @@ impl MainWindow {
             sender.send(DrawMessage::Open).unwrap();
         });
 
+        // File Choice
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
         self.file_choice.set_callback(move |_| {
@@ -710,6 +732,7 @@ impl MainWindow {
             sender.send(DrawMessage::Open).unwrap();
         });
 
+        // Quote Input
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
@@ -725,6 +748,7 @@ impl MainWindow {
             true
         });
 
+        // Subquote Input
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
@@ -740,6 +764,7 @@ impl MainWindow {
             true
         });
 
+        // Subquote2 Input
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
@@ -755,6 +780,7 @@ impl MainWindow {
             true
         });
 
+        // Tag Input
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
@@ -770,6 +796,7 @@ impl MainWindow {
             true
         });
 
+        // Tag2 Input
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
@@ -785,6 +812,7 @@ impl MainWindow {
             true
         });
 
+        // Quote Position Input
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
@@ -799,6 +827,7 @@ impl MainWindow {
             image.redraw();
         });
 
+        // Quote Position Slider
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
@@ -813,6 +842,7 @@ impl MainWindow {
             image.redraw();
         });
 
+        // Subquote Position Input
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
@@ -827,6 +857,7 @@ impl MainWindow {
             image.redraw();
         });
 
+        // Subquote Position Slider
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
@@ -841,6 +872,7 @@ impl MainWindow {
             image.redraw();
         });
 
+        // Subquote2 Position Input
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
@@ -855,6 +887,7 @@ impl MainWindow {
             image.redraw();
         });
 
+        // Subquote2 Position Slider
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
@@ -869,6 +902,7 @@ impl MainWindow {
             image.redraw();
         });
 
+        // Tag Position Input
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
@@ -883,6 +917,7 @@ impl MainWindow {
             image.redraw();
         });
 
+        // Tag Position Slider
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
@@ -897,6 +932,7 @@ impl MainWindow {
             image.redraw();
         });
 
+        // Tag2 Position Input
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
@@ -911,6 +947,7 @@ impl MainWindow {
             image.redraw();
         });
 
+        // Tag2 Position Slider
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
@@ -924,22 +961,24 @@ impl MainWindow {
             sender.send(DrawMessage::Flush).unwrap();
             image.redraw();
         });
+
+        // Translucent Layer RGB
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
-        self.layer_rgb.set_callback(move |mut f| {
+        self.translucent_layer_rgb.set_callback(move |mut f| {
             let mut prop = properties.write().unwrap();
             let (r, g, b) = dialog::color_chooser_with_default(
                 "Pick a colour",
                 dialog::ColorMode::Byte,
                 (
-                    prop.color_layer[0],
-                    prop.color_layer[1],
-                    prop.color_layer[2],
+                    prop.translucent_layer_color[0],
+                    prop.translucent_layer_color[1],
+                    prop.translucent_layer_color[2],
                 ),
             );
-            prop.color_layer = [r, g, b, prop.color_layer[3]];
-            utils::set_color_btn_rgba(prop.color_layer, &mut f);
+            prop.translucent_layer_color = [r, g, b, prop.translucent_layer_color[3]];
+            utils::set_color_btn_rgba(prop.translucent_layer_color, &mut f);
             f.redraw();
             prop.is_saved = false;
             sender.send(DrawMessage::RedrawToBuffer).unwrap();
@@ -947,12 +986,13 @@ impl MainWindow {
             image.redraw();
         });
 
+        // Translucent Layer Opacity
         let mut image = self.page.image.clone();
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
-        self.layer_alpha.set_callback(move |f| {
+        self.translucent_layer_alpha.set_callback(move |f| {
             let mut prop = properties.write().unwrap();
-            prop.color_layer[3] = f.value() as u8;
+            prop.translucent_layer_color[3] = f.value() as u8;
             prop.is_saved = false;
             sender.send(DrawMessage::RedrawToBuffer).unwrap();
             sender.send(DrawMessage::Flush).unwrap();
@@ -961,6 +1001,7 @@ impl MainWindow {
     }
 }
 
+/// Load all iamges in a directory
 fn load_dir(
     path: &PathBuf,
     imgs: Arc<RwLock<Vec<PathBuf>>>,

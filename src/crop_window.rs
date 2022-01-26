@@ -12,6 +12,7 @@
     along with Post Maker.  If not, see <https://www.gnu.org/licenses/>
 */
 
+//! Window to change Crop properties of image
 use crate::{
     globals,
     utils::{self, Coord, ImageContainer, ImageProperties},
@@ -117,7 +118,7 @@ impl CropWindow {
             };
         }
 
-        container.apply_scale();
+        container.apply_resize();
         let (image_width, image_height): (f64, f64) =
             Coord::from(container.image.dimensions()).into();
         self.win.set_size(image_width as i32, 600);
@@ -147,6 +148,7 @@ impl CropWindow {
         }
     }
 
+    /// Set drawing in window
     fn draw(&mut self) {
         let container = Rc::clone(&self.container);
         self.page.image_view.draw(move |f| {
@@ -186,7 +188,9 @@ impl CropWindow {
         });
     }
 
+    /// Set callbacks of elements
     fn event(&mut self) {
+        // Handle mosue events for crop area in image view
         let mut last: Option<(f64, f64)> = None;
         let container = Rc::clone(&self.container);
         self.page.image_view.handle(move |f, ev| {
@@ -246,6 +250,7 @@ impl CropWindow {
             true
         });
 
+        // Window close
         let mut wind = self.win.clone();
         self.apply_btn.set_callback(move |_| {
             wind.do_callback();

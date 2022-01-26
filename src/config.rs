@@ -12,7 +12,7 @@
     along with Post Maker.  If not, see <https://www.gnu.org/licenses/>
 */
 
-///! load, save configuration and parse cli args
+//! load, save configuration and parse cli args
 use crate::{config_picker::ConfigPicker, globals};
 use clap::{ArgEnum, Parser};
 use fltk::dialog;
@@ -27,6 +27,7 @@ use std::{
 };
 
 lazy_static! {
+    /// Directory where all Configurations are present
     static ref CONFIG_DIR: PathBuf = {
         let dir = match dirs::config_dir() {
             Some(path) => path,
@@ -45,8 +46,12 @@ lazy_static! {
         }
         dir
     };
+
+    /// Configuration File
     static ref CONFIG_FILE: PathBuf = CONFIG_DIR.join("post_maker.config");
-    static ref LOG_PATH: PathBuf = CONFIG_DIR.join("post_maker.log");
+
+    /// Log File
+    static ref LOG_FILE: PathBuf = CONFIG_DIR.join("post_maker.log");
 }
 
 /// Simple program calculate size of stuff in quote image
@@ -103,14 +108,19 @@ impl Into<ThemeType> for Themes {
     }
 }
 
+pub(crate) fn args() -> Args {
+    let args = Args::parse();
+    args
+}
+
 /// Configuation file
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct ConfigFile {
-    pub(crate) quote_font_ttf: String,
-    pub(crate) subquote_font_ttf: String,
-    pub(crate) subquote2_font_ttf: String,
-    pub(crate) tag_font_ttf: String,
-    pub(crate) tag2_font_ttf: String,
+    pub(crate) quote_font: String,
+    pub(crate) subquote_font: String,
+    pub(crate) subquote2_font: String,
+    pub(crate) tag_font: String,
+    pub(crate) tag2_font: String,
     pub(crate) quote_font_ratio: f64,
     pub(crate) subquote_font_ratio: f64,
     pub(crate) subquote2_font_ratio: f64,
@@ -128,11 +138,11 @@ pub(crate) struct ConfigFile {
 impl Default for ConfigFile {
     fn default() -> Self {
         Self {
-            quote_font_ttf: String::new(),
-            subquote_font_ttf: String::new(),
-            subquote2_font_ttf: String::new(),
-            tag_font_ttf: String::new(),
-            tag2_font_ttf: String::new(),
+            quote_font: String::new(),
+            subquote_font: String::new(),
+            subquote2_font: String::new(),
+            tag_font: String::new(),
+            tag2_font: String::new(),
             quote_font_ratio: 230.0,
             subquote_font_ratio: 230.0,
             subquote2_font_ratio: 230.0,
@@ -190,6 +200,7 @@ impl ConfigFile {
     }
 }
 
+/// Get parsed configs from file
 pub(crate) fn get_configs() -> Option<HashMap<String, ConfigFile>> {
     match std::fs::read_to_string(&*CONFIG_FILE) {
         Ok(r) => serde_json::from_str::<HashMap<String, ConfigFile>>(&r).ok(),
@@ -197,6 +208,7 @@ pub(crate) fn get_configs() -> Option<HashMap<String, ConfigFile>> {
     }
 }
 
+/// Save configs
 pub(crate) fn save_configs(configs: HashMap<String, ConfigFile>) {
     if let Err(e) = std::fs::write(&*CONFIG_FILE, serde_json::to_string(&configs).unwrap()) {
         dialog::alert_default("Can't write config!");
@@ -205,9 +217,28 @@ pub(crate) fn save_configs(configs: HashMap<String, ConfigFile>) {
     }
 }
 
-pub(crate) fn config() -> Args {
-    let args = Args::parse();
-    args
+pub(crate) fn log_file() -> File {
+    match File::open(&*LOG_FILE) {
+        Ok(mut file) => {
+            if is_file_30_days_old(&file) {
+                match File::create(&*LOG_FILE) {
+                    Ok(f) => file = f,
+                    Err(e) => {
+                        dialog::alert_default("Can't open log file!");
+                        panic!("{:?}", e);
+                    }
+                }
+            }
+            file
+        }
+        Err(_) => match File::create(&*LOG_FILE) {
+            Ok(f) => f,
+            Err(e) => {
+                dialog::alert_default("Can't open log file!");
+                panic!("{:?}", e);
+            }
+        },
+    }
 }
 
 pub(crate) fn is_file_30_days_old(file: &File) -> bool {
@@ -221,28 +252,4 @@ pub(crate) fn is_file_30_days_old(file: &File) -> bool {
         }
     }
     false
-}
-
-pub(crate) fn log_file() -> File {
-    match File::open(&*LOG_PATH) {
-        Ok(mut file) => {
-            if is_file_30_days_old(&file) {
-                match File::create(&*LOG_PATH) {
-                    Ok(f) => file = f,
-                    Err(e) => {
-                        dialog::alert_default("Can't open log file!");
-                        panic!("{:?}", e);
-                    }
-                }
-            }
-            file
-        }
-        Err(_) => match File::create(&*LOG_PATH) {
-            Ok(f) => f,
-            Err(e) => {
-                dialog::alert_default("Can't open log file!");
-                panic!("{:?}", e);
-            }
-        },
-    }
 }

@@ -32,13 +32,13 @@ use fltk::{
     prelude::*,
 };
 use fltk_theme::WidgetTheme;
-use simplelog::*;
-
 use main_window::MainWindow;
+use simplelog::*;
 use std::sync::{Arc, RwLock};
 
 #[derive(Clone, Debug)]
 pub(crate) enum AppMessage {
+    /// Copy recived image buffer from draw_thread to Buffer for fltk frame
     RedrawMainWindowImage(Option<Vec<u8>>),
 }
 
@@ -57,7 +57,9 @@ fn main() {
 
     lazy_static::initialize(&globals::CONFIG);
 
+    // Buffer which will br drawin on fltk frame
     let draw_buff: Arc<RwLock<Option<Vec<u8>>>> = Arc::new(RwLock::new(None));
+
     let (main_sender, main_receiver) = channel::<AppMessage>();
     let mut main_window = MainWindow::new(main_sender, Arc::clone(&draw_buff));
 

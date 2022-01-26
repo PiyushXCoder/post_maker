@@ -12,8 +12,7 @@
     along with Post Maker.  If not, see <https://www.gnu.org/licenses/>
 */
 
-use std::{cell::RefCell, rc::Rc};
-
+//! Picker to pick config if multiple configs are present or defalut config is not present
 use crate::globals;
 use fltk::{
     app,
@@ -25,6 +24,7 @@ use fltk::{
     prelude::*,
     window::Window,
 };
+use std::{cell::RefCell, rc::Rc};
 
 pub(crate) struct ConfigPicker {
     pub(crate) win: Window,
@@ -87,17 +87,21 @@ impl ConfigPicker {
         config_picker
     }
 
+    // Set callbacks of elements
     fn event(&mut self) {
+        // Apply Button
         let mut win = self.win.clone();
         self.apply_btn.set_callback(move |_| {
             win.hide();
         });
 
+        // Browse List
         let selected = Rc::clone(&self.selected);
         self.browse.set_callback(move |f| {
             *selected.borrow_mut() = f.selected_text();
         });
 
+        // Window Close
         let selected = Rc::clone(&self.selected);
         self.win.set_callback(move |f| {
             *selected.borrow_mut() = None;

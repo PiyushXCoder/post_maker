@@ -102,7 +102,8 @@ impl ImageContainer {
         }
     }
 
-    pub(crate) fn apply_scale(&mut self) {
+    /// Resize image
+    pub(crate) fn apply_resize(&mut self) {
         let mut prop = self.properties.write().unwrap();
         let (width, height) = prop.dimension;
         let (s_width, s_height) = ((width * 500.0) / height, 500.0);
@@ -113,6 +114,7 @@ impl ImageContainer {
         prop.dimension = (s_width, s_height);
     }
 
+    /// Crop Image
     pub(crate) fn apply_crop(&mut self) {
         let mut prop = self.properties.write().unwrap();
         let (original_width, original_height) = prop.original_dimension;
@@ -155,13 +157,14 @@ impl ImageContainer {
         self.buffer = self.image.clone();
     }
 
+    /// Redraw: Copy image from main image to buffer and draw text and all on it
     pub(crate) fn redraw_to_buffer(&mut self) {
         let prop = self.properties.read().unwrap();
         let mut tmp = self.image.clone();
 
         draw_layer_and_text(
             &mut tmp,
-            &prop.color_layer,
+            &prop.translucent_layer_color,
             &prop.quote,
             &prop.subquote,
             &prop.subquote2,
@@ -178,6 +181,7 @@ impl ImageContainer {
         self.buffer = tmp;
     }
 
+    /// Save image anf properities
     pub(crate) fn save(&self) {
         let prop = self.properties.read().unwrap();
 
@@ -185,7 +189,7 @@ impl ImageContainer {
             Some(p) => Path::new(p),
             None => return,
         };
-        let path_conf = path_original.with_extension("conf");
+        let path_properties = path_original.with_extension("prop");
         let export = path_original.parent().unwrap().join("export").join(
             path_original
                 .with_extension("png")
@@ -198,11 +202,11 @@ impl ImageContainer {
         let mut prop = prop.clone();
         prop.path = None;
         if let Err(e) = fs::write(
-            &path_conf,
+            &path_properties,
             serde_json::to_string(&ImagePropertiesFile::from(&prop)).unwrap(),
         ) {
-            dialog::alert_default("Failed to save conf!");
-            warn!("Failed to save conf!\n{:?}", e);
+            dialog::alert_default("Failed to save properties!");
+            warn!("Failed to save properties!\n{:?}", e);
         }
 
         let mut img = image::open(&path_original).unwrap();
@@ -218,7 +222,7 @@ impl ImageContainer {
 
         draw_layer_and_text(
             &mut img,
-            &prop.color_layer,
+            &prop.translucent_layer_color,
             &prop.quote,
             &prop.subquote,
             &prop.subquote2,
@@ -253,8 +257,8 @@ impl ImageContainer {
                     i += 1;
                 }
 
-                let path_conf = path.with_extension("conf");
-                let path_conf_new = new_path.with_extension("conf");
+                let path_properties = path.with_extension("prop");
+                let path_properties_new = new_path.with_extension("prop");
 
                 if path.exists() {
                     if let Err(e) = fs::copy(path, &new_path) {
@@ -264,10 +268,10 @@ impl ImageContainer {
                     }
                 }
 
-                if path_conf.exists() {
-                    if let Err(e) = fs::copy(path_conf, &path_conf_new) {
-                        dialog::alert_default("Failed to clone image!");
-                        warn!("Failed to clone image!\n{:?}", e);
+                if path_properties.exists() {
+                    if let Err(e) = fs::copy(path_properties, &path_properties_new) {
+                        dialog::alert_default("Failed to clone image properties!");
+                        warn!("Failed to clone image properties!\n{:?}", e);
                     }
                 }
                 Some(new_path)
@@ -283,7 +287,7 @@ impl ImageContainer {
             Some(p) => Path::new(p),
             None => return,
         };
-        let path_properties = path_original.with_extension("conf");
+        let path_properties = path_original.with_extension("prop");
         let export = path_original.parent().unwrap().join("export").join(
             path_original
                 .with_extension("png")
@@ -302,8 +306,8 @@ impl ImageContainer {
 
         if path_properties.exists() {
             if let Err(e) = fs::remove_file(path_properties) {
-                dialog::alert_default("Failed to delete image properties file!");
-                warn!("Failed to delete image properties file!\n{:?}", e);
+                dialog::alert_default("Failed to delete image properties!");
+                warn!("Failed to delete image properties!\n{:?}", e);
             }
         }
 
@@ -316,10 +320,9 @@ impl ImageContainer {
     }
 }
 
+/// Structure of Properties file of image to save and read
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct ImagePropertiesFile {
-    // pub(crate) dimension: Option<(f64, f64)>,
-    // pub(crate) original_dimension: Option<(f64, f64)>,
     pub(crate) crop_position: Option<(f64, f64)>,
     pub(crate) quote: Option<String>,
     pub(crate) subquote: Option<String>,
@@ -331,14 +334,12 @@ pub(crate) struct ImagePropertiesFile {
     pub(crate) subquote2_position: Option<f64>, // as per original
     pub(crate) tag_position: Option<f64>,   // as per original
     pub(crate) tag2_position: Option<f64>,  // as per original
-    pub(crate) color_layer: Option<[u8; 4]>,
+    pub(crate) translucent_layer_color: Option<[u8; 4]>,
 }
 
 impl Default for ImagePropertiesFile {
     fn default() -> Self {
         Self {
-            // dimension: None,
-            // original_dimension: None,
             crop_position: None,
             quote: None,
             subquote: None,
@@ -350,7 +351,7 @@ impl Default for ImagePropertiesFile {
             subquote2_position: None,
             tag_position: None,
             tag2_position: None,
-            color_layer: None,
+            translucent_layer_color: None,
         }
     }
 }
@@ -358,8 +359,6 @@ impl Default for ImagePropertiesFile {
 impl From<&ImageProperties> for ImagePropertiesFile {
     fn from(props: &ImageProperties) -> Self {
         Self {
-            // dimension: Some(props.dimension),
-            // original_dimension: Some(props.original_dimension),
             crop_position: props.crop_position,
             quote: Some(props.quote.clone()),
             subquote: Some(props.subquote.clone()),
@@ -371,11 +370,12 @@ impl From<&ImageProperties> for ImagePropertiesFile {
             subquote2_position: Some(props.subquote2_position),
             tag_position: Some(props.tag_position),
             tag2_position: Some(props.tag2_position),
-            color_layer: Some(props.color_layer),
+            translucent_layer_color: Some(props.translucent_layer_color),
         }
     }
 }
 
+/// Properties of loaded image
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct ImageProperties {
     pub(crate) path: Option<PathBuf>,
@@ -392,7 +392,7 @@ pub(crate) struct ImageProperties {
     pub(crate) subquote2_position: f64, // as per original
     pub(crate) tag_position: f64,       // as per original
     pub(crate) tag2_position: f64,      // as per original
-    pub(crate) color_layer: [u8; 4],
+    pub(crate) translucent_layer_color: [u8; 4],
     pub(crate) is_saved: bool,
 }
 
@@ -413,7 +413,7 @@ impl Default for ImageProperties {
             subquote2_position: 0.0,
             tag_position: 0.0,
             tag2_position: 0.0,
-            color_layer: [0; 4],
+            translucent_layer_color: [0; 4],
             is_saved: true,
         }
     }
@@ -440,12 +440,13 @@ impl ImageProperties {
         self.subquote2_position = props.subquote2_position.unwrap_or(self.subquote2_position);
         self.tag_position = props.tag_position.unwrap_or(self.tag_position);
         self.tag2_position = props.tag2_position.unwrap_or(self.tag2_position);
-        self.color_layer = props
-            .color_layer
+        self.translucent_layer_color = props
+            .translucent_layer_color
             .unwrap_or(globals::CONFIG.read().unwrap().color_layer);
     }
 }
 
+/// Draw text and stuffs on image
 fn draw_layer_and_text(
     tmp: &mut DynamicImage,
     rgba: &[u8; 4],
@@ -526,6 +527,7 @@ fn draw_layer_and_text(
     }
 }
 
+/// Draw multiline string on image
 pub(crate) fn draw_multiline_mid_string(
     tmp: &mut DynamicImage,
     font: &rusttype::Font,
@@ -551,53 +553,7 @@ pub(crate) fn draw_multiline_mid_string(
     }
 }
 
-// small hack because 0,0,0 rgb can't be set on theme
-pub(crate) fn set_color_btn_rgba(rgba: [u8; 4], btn: &mut Button) {
-    let [mut r, g, b, _] = rgba;
-    if r == 0 && g == 0 && b == 0 {
-        r = 1;
-    }
-    btn.set_color(enums::Color::from_rgb(r, g, b));
-}
-
-pub(crate) fn croped_ratio(width: f64, height: f64) -> (f64, f64) {
-    if width > width_from_height(height) {
-        (width_from_height(height), height)
-    } else {
-        (width, height_from_width(width))
-    }
-}
-
-pub(crate) fn width_from_height(height: f64) -> f64 {
-    let (w, h) = globals::CONFIG.read().unwrap().image_ratio;
-    (w * height) / h
-}
-
-pub(crate) fn height_from_width(width: f64) -> f64 {
-    let (w, h) = globals::CONFIG.read().unwrap().image_ratio;
-    (h * width) / w
-}
-
-pub(crate) fn quote_from_height(height: f64) -> f64 {
-    (height * globals::CONFIG.read().unwrap().quote_font_ratio) / 5000.0
-}
-
-pub(crate) fn subquote_from_height(height: f64) -> f64 {
-    (height * globals::CONFIG.read().unwrap().subquote_font_ratio) / 5000.0
-}
-
-pub(crate) fn subquote2_from_height(height: f64) -> f64 {
-    (height * globals::CONFIG.read().unwrap().subquote2_font_ratio) / 5000.0
-}
-
-pub(crate) fn tag_from_height(height: f64) -> f64 {
-    (height * globals::CONFIG.read().unwrap().tag_font_ratio) / 5000.0
-}
-
-pub(crate) fn tag2_from_height(height: f64) -> f64 {
-    (height * globals::CONFIG.read().unwrap().tag2_font_ratio) / 5000.0
-}
-
+/// Get size of text to draw on image
 pub(crate) fn measure_line(
     font: &rusttype::Font,
     text: &str,
@@ -613,4 +569,59 @@ pub(crate) fn measure_line(
     let height = v_metrics.ascent - v_metrics.descent + v_metrics.line_gap;
 
     Coord::from((width, height)).into()
+}
+
+/// small hack because 0,0,0 rgb, because can't be set on fltk theme
+pub(crate) fn set_color_btn_rgba(rgba: [u8; 4], btn: &mut Button) {
+    let [mut r, g, b, _] = rgba;
+    if r == 0 && g == 0 && b == 0 {
+        r = 1;
+    }
+    btn.set_color(enums::Color::from_rgb(r, g, b));
+}
+
+/// Get required size to crop image as per image ratio
+pub(crate) fn croped_ratio(width: f64, height: f64) -> (f64, f64) {
+    if width > width_from_height(height) {
+        (width_from_height(height), height)
+    } else {
+        (width, height_from_width(width))
+    }
+}
+
+/// Get required witdh to crop image from height as per image ratio
+pub(crate) fn width_from_height(height: f64) -> f64 {
+    let (w, h) = globals::CONFIG.read().unwrap().image_ratio;
+    (w * height) / h
+}
+
+/// Get required height to crop image from width as per image ratio
+pub(crate) fn height_from_width(width: f64) -> f64 {
+    let (w, h) = globals::CONFIG.read().unwrap().image_ratio;
+    (h * width) / w
+}
+
+/// Get required quote size for crop image from height as per image ratio
+pub(crate) fn quote_from_height(height: f64) -> f64 {
+    (height * globals::CONFIG.read().unwrap().quote_font_ratio) / 5000.0
+}
+
+/// Get required subquote size for crop image from height as per image ratio
+pub(crate) fn subquote_from_height(height: f64) -> f64 {
+    (height * globals::CONFIG.read().unwrap().subquote_font_ratio) / 5000.0
+}
+
+/// Get required subquote2 size for crop image from height as per image ratio
+pub(crate) fn subquote2_from_height(height: f64) -> f64 {
+    (height * globals::CONFIG.read().unwrap().subquote2_font_ratio) / 5000.0
+}
+
+/// Get required tag size for crop image from height as per image ratio
+pub(crate) fn tag_from_height(height: f64) -> f64 {
+    (height * globals::CONFIG.read().unwrap().tag_font_ratio) / 5000.0
+}
+
+/// Get required tag2 size for crop image from height as per image ratio
+pub(crate) fn tag2_from_height(height: f64) -> f64 {
+    (height * globals::CONFIG.read().unwrap().tag2_font_ratio) / 5000.0
 }

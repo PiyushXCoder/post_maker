@@ -42,16 +42,16 @@ pub(crate) struct ConfigWindow {
     pub(crate) selected_browse_line: Rc<RefCell<i32>>,
     pub(crate) add_config_btn: Button,
     pub(crate) del_config_btn: Button,
-    pub(crate) quote_font_ttf: Output,
-    pub(crate) quote_font_ttf_browse: Button,
-    pub(crate) subquote_font_ttf: Output,
-    pub(crate) subquote_font_ttf_browse: Button,
-    pub(crate) subquote2_font_ttf: Output,
-    pub(crate) subquote2_font_ttf_browse: Button,
-    pub(crate) tag_font_ttf: Output,
-    pub(crate) tag_font_ttf_browse: Button,
-    pub(crate) tag2_font_ttf: Output,
-    pub(crate) tag2_font_ttf_browse: Button,
+    pub(crate) quote_font: Output,
+    pub(crate) quote_font_browse: Button,
+    pub(crate) subquote_font: Output,
+    pub(crate) subquote_font_browse: Button,
+    pub(crate) subquote2_font: Output,
+    pub(crate) subquote2_font_browse: Button,
+    pub(crate) tag_font: Output,
+    pub(crate) tag_font_browse: Button,
+    pub(crate) tag2_font: Output,
+    pub(crate) tag2_font_browse: Button,
     pub(crate) quote_font_ratio: ValueInput,
     pub(crate) subquote_font_ratio: ValueInput,
     pub(crate) subquote2_font_ratio: ValueInput,
@@ -64,8 +64,10 @@ pub(crate) struct ConfigWindow {
     pub(crate) tag2_position_ratio: ValueInput,
     pub(crate) image_ratio_width: ValueInput,
     pub(crate) image_ratio_height: ValueInput,
-    pub(crate) layer_rgb: Button,
-    pub(crate) layer_alpha: ValueInput,
+    /// RGB value of top translucent layer
+    pub(crate) translucent_layer_rgb: Button,
+    /// opacity value of top translucent layer
+    pub(crate) translucent_layer_alpha: ValueInput,
     pub(crate) defaults_btn: Button,
     pub(crate) save_btn: Button,
     pub(crate) cancel_btn: Button,
@@ -112,73 +114,73 @@ impl ConfigWindow {
         let row_grp = Flex::default().row();
         // column 1
         let mut col_grp = Flex::default().column();
-        let mut quote_font_ttf_grp = Flex::default().row();
-        quote_font_ttf_grp.set_size(
+        let mut quote_font_grp = Flex::default().row();
+        quote_font_grp.set_size(
             &Frame::default()
                 .with_label("Quote")
                 .with_align(Align::Right | Align::Inside),
             130,
         );
-        let quote_font_ttf = Output::default();
-        let quote_font_ttf_browse = Button::default().with_label("Pick");
-        quote_font_ttf_grp.set_size(&quote_font_ttf_browse, 50);
-        quote_font_ttf_grp.end();
-        col_grp.set_size(&quote_font_ttf_grp, 30);
+        let quote_font = Output::default();
+        let quote_font_browse = Button::default().with_label("Pick");
+        quote_font_grp.set_size(&quote_font_browse, 50);
+        quote_font_grp.end();
+        col_grp.set_size(&quote_font_grp, 30);
 
-        let mut subquote_font_ttf_grp = Flex::default().row();
-        subquote_font_ttf_grp.set_size(
+        let mut subquote_font_grp = Flex::default().row();
+        subquote_font_grp.set_size(
             &Frame::default()
                 .with_label("Subquote")
                 .with_align(Align::Right | Align::Inside),
             130,
         );
-        let subquote_font_ttf = Output::default();
-        let subquote_font_ttf_browse = Button::default().with_label("Pick");
-        subquote_font_ttf_grp.set_size(&subquote_font_ttf_browse, 50);
-        subquote_font_ttf_grp.end();
-        col_grp.set_size(&subquote_font_ttf_grp, 30);
+        let subquote_font = Output::default();
+        let subquote_font_browse = Button::default().with_label("Pick");
+        subquote_font_grp.set_size(&subquote_font_browse, 50);
+        subquote_font_grp.end();
+        col_grp.set_size(&subquote_font_grp, 30);
 
-        let mut subquote2_font_ttf_grp = Flex::default().row();
-        subquote2_font_ttf_grp.set_size(
+        let mut subquote2_font_grp = Flex::default().row();
+        subquote2_font_grp.set_size(
             &Frame::default()
                 .with_label("Subquote 2")
                 .with_align(Align::Right | Align::Inside),
             130,
         );
-        let subquote2_font_ttf = Output::default();
-        let subquote2_font_ttf_browse = Button::default().with_label("Pick");
-        subquote2_font_ttf_grp.set_size(&subquote2_font_ttf_browse, 50);
-        subquote2_font_ttf_grp.end();
-        col_grp.set_size(&subquote2_font_ttf_grp, 30);
+        let subquote2_font = Output::default();
+        let subquote2_font_browse = Button::default().with_label("Pick");
+        subquote2_font_grp.set_size(&subquote2_font_browse, 50);
+        subquote2_font_grp.end();
+        col_grp.set_size(&subquote2_font_grp, 30);
         col_grp.end();
 
         // column 2
         let mut col_grp = Flex::default().column();
-        let mut tag_font_ttf_grp = Flex::default().row();
-        tag_font_ttf_grp.set_size(
+        let mut tag_font_grp = Flex::default().row();
+        tag_font_grp.set_size(
             &Frame::default()
                 .with_label("Tag")
                 .with_align(Align::Right | Align::Inside),
             130,
         );
-        let tag_font_ttf = Output::default();
-        let tag_font_ttf_browse = Button::default().with_label("Pick");
-        tag_font_ttf_grp.set_size(&tag_font_ttf_browse, 50);
-        tag_font_ttf_grp.end();
-        col_grp.set_size(&tag_font_ttf_grp, 30);
+        let tag_font = Output::default();
+        let tag_font_browse = Button::default().with_label("Pick");
+        tag_font_grp.set_size(&tag_font_browse, 50);
+        tag_font_grp.end();
+        col_grp.set_size(&tag_font_grp, 30);
 
-        let mut tag2_font_ttf_grp = Flex::default().row();
-        tag2_font_ttf_grp.set_size(
+        let mut tag2_font_grp = Flex::default().row();
+        tag2_font_grp.set_size(
             &Frame::default()
                 .with_label("Tag 2")
                 .with_align(Align::Right | Align::Inside),
             130,
         );
-        let tag2_font_ttf = Output::default();
-        let tag2_font_ttf_browse = Button::default().with_label("Pick");
-        tag2_font_ttf_grp.set_size(&tag2_font_ttf_browse, 50);
-        tag2_font_ttf_grp.end();
-        col_grp.set_size(&tag2_font_ttf_grp, 30);
+        let tag2_font = Output::default();
+        let tag2_font_browse = Button::default().with_label("Pick");
+        tag2_font_grp.set_size(&tag2_font_browse, 50);
+        tag2_font_grp.end();
+        col_grp.set_size(&tag2_font_grp, 30);
         col_grp.end();
         row_grp.end();
         col.set_size(&row_grp, 110);
@@ -355,16 +357,16 @@ impl ConfigWindow {
         hint.set_label_size(12);
         col.set_size(&hint, 20);
 
-        let mut darklayer_flex = Flex::default().row();
-        darklayer_flex.set_pad(2);
-        darklayer_flex.set_size(&Frame::default().with_label("Colour"), 50);
-        let mut layer_rgb = Button::default();
-        layer_rgb.set_frame(enums::FrameType::BorderBox);
+        let mut translucent_layer_flex = Flex::default().row();
+        translucent_layer_flex.set_pad(2);
+        translucent_layer_flex.set_size(&Frame::default().with_label("Colour"), 50);
+        let mut translucent_layer_rgb = Button::default();
+        translucent_layer_rgb.set_frame(enums::FrameType::BorderBox);
 
-        darklayer_flex.set_size(&Frame::default().with_label("Alpha"), 50);
-        let layer_alpha = ValueInput::default();
-        darklayer_flex.end();
-        col.set_size(&darklayer_flex, 30);
+        translucent_layer_flex.set_size(&Frame::default().with_label("Alpha"), 50);
+        let translucent_layer_alpha = ValueInput::default();
+        translucent_layer_flex.end();
+        col.set_size(&translucent_layer_flex, 30);
 
         Frame::default();
 
@@ -392,16 +394,16 @@ impl ConfigWindow {
             selected_browse_line: Rc::new(RefCell::new(0)),
             add_config_btn,
             del_config_btn,
-            quote_font_ttf,
-            quote_font_ttf_browse,
-            subquote_font_ttf,
-            subquote_font_ttf_browse,
-            subquote2_font_ttf,
-            subquote2_font_ttf_browse,
-            tag_font_ttf,
-            tag_font_ttf_browse,
-            tag2_font_ttf,
-            tag2_font_ttf_browse,
+            quote_font,
+            quote_font_browse,
+            subquote_font,
+            subquote_font_browse,
+            subquote2_font,
+            subquote2_font_browse,
+            tag_font,
+            tag_font_browse,
+            tag2_font,
+            tag2_font_browse,
             quote_font_ratio,
             subquote_font_ratio,
             subquote2_font_ratio,
@@ -414,8 +416,8 @@ impl ConfigWindow {
             tag2_position_ratio,
             image_ratio_width,
             image_ratio_height,
-            layer_rgb,
-            layer_alpha,
+            translucent_layer_rgb,
+            translucent_layer_alpha,
             defaults_btn,
             save_btn,
             cancel_btn,
@@ -427,6 +429,7 @@ impl ConfigWindow {
         config_window
     }
 
+    // Show to edit config
     pub(crate) fn show(&mut self) -> bool {
         let config_name = &*globals::CONFIG_NAME.read().unwrap();
         self.browse.clear();
@@ -438,14 +441,12 @@ impl ConfigWindow {
         }
         *self.selected_browse_line.borrow_mut() = self.browse.value();
         let config = globals::CONFIG.read().unwrap();
-        self.quote_font_ttf
-            .set_value(config.quote_font_ttf.as_str());
-        self.subquote_font_ttf
-            .set_value(config.subquote_font_ttf.as_str());
-        self.subquote2_font_ttf
-            .set_value(config.subquote2_font_ttf.as_str());
-        self.tag_font_ttf.set_value(config.tag_font_ttf.as_str());
-        self.tag2_font_ttf.set_value(config.tag2_font_ttf.as_str());
+        self.quote_font.set_value(config.quote_font.as_str());
+        self.subquote_font.set_value(config.subquote_font.as_str());
+        self.subquote2_font
+            .set_value(config.subquote2_font.as_str());
+        self.tag_font.set_value(config.tag_font.as_str());
+        self.tag2_font.set_value(config.tag2_font.as_str());
         self.quote_font_ratio.set_value(config.quote_font_ratio);
         self.subquote_font_ratio
             .set_value(config.subquote_font_ratio);
@@ -464,8 +465,9 @@ impl ConfigWindow {
             .set_value(config.tag2_position_ratio);
         self.image_ratio_width.set_value(config.image_ratio.0);
         self.image_ratio_height.set_value(config.image_ratio.1);
-        utils::set_color_btn_rgba(config.color_layer, &mut self.layer_rgb);
-        self.layer_alpha.set_value(config.color_layer[3] as f64);
+        utils::set_color_btn_rgba(config.color_layer, &mut self.translucent_layer_rgb);
+        self.translucent_layer_alpha
+            .set_value(config.color_layer[3] as f64);
         *self.did_save.borrow_mut() = false;
         drop(config);
         self.win.show();
@@ -475,12 +477,14 @@ impl ConfigWindow {
         *self.did_save.borrow()
     }
 
+    /// Set callbacks of elements
     fn event(&mut self) {
-        let mut quote_font_ttf = self.quote_font_ttf.clone();
-        let mut subquote_font_ttf = self.subquote_font_ttf.clone();
-        let mut subquote2_font_ttf = self.subquote2_font_ttf.clone();
-        let mut tag_font_ttf = self.tag_font_ttf.clone();
-        let mut tag2_font_ttf = self.tag2_font_ttf.clone();
+        // Add new Config Button
+        let mut quote_font = self.quote_font.clone();
+        let mut subquote_font = self.subquote_font.clone();
+        let mut subquote2_font = self.subquote2_font.clone();
+        let mut tag_font = self.tag_font.clone();
+        let mut tag2_font = self.tag2_font.clone();
         let mut quote_font_ratio = self.quote_font_ratio.clone();
         let mut subquote_font_ratio = self.subquote_font_ratio.clone();
         let mut subquote2_font_ratio = self.subquote2_font_ratio.clone();
@@ -493,8 +497,8 @@ impl ConfigWindow {
         let mut tag2_position_ratio = self.tag2_position_ratio.clone();
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
-        let mut layer_rgb = self.layer_rgb.clone();
-        let mut layer_alpha = self.layer_alpha.clone();
+        let mut layer_rgb = self.translucent_layer_rgb.clone();
+        let mut layer_alpha = self.translucent_layer_alpha.clone();
         let mut browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
         let selected_browse_line = Rc::clone(&self.selected_browse_line);
@@ -519,11 +523,11 @@ impl ConfigWindow {
             };
 
             let conf = ConfigFile::default();
-            quote_font_ttf.set_value(&conf.quote_font_ttf);
-            subquote_font_ttf.set_value(&conf.subquote_font_ttf);
-            subquote2_font_ttf.set_value(&conf.subquote2_font_ttf);
-            tag_font_ttf.set_value(&conf.tag_font_ttf);
-            tag2_font_ttf.set_value(&conf.tag2_font_ttf);
+            quote_font.set_value(&conf.quote_font);
+            subquote_font.set_value(&conf.subquote_font);
+            subquote2_font.set_value(&conf.subquote2_font);
+            tag_font.set_value(&conf.tag_font);
+            tag2_font.set_value(&conf.tag2_font);
             quote_font_ratio.set_value(conf.quote_font_ratio);
             subquote_font_ratio.set_value(conf.subquote_font_ratio);
             subquote2_font_ratio.set_value(conf.subquote2_font_ratio);
@@ -545,11 +549,12 @@ impl ConfigWindow {
             layer_rgb.redraw();
         });
 
-        let mut quote_font_ttf = self.quote_font_ttf.clone();
-        let mut subquote_font_ttf = self.subquote_font_ttf.clone();
-        let mut subquote2_font_ttf = self.subquote2_font_ttf.clone();
-        let mut tag_font_ttf = self.tag_font_ttf.clone();
-        let mut tag2_font_ttf = self.tag2_font_ttf.clone();
+        // Delete selected Config Button
+        let mut quote_font = self.quote_font.clone();
+        let mut subquote_font = self.subquote_font.clone();
+        let mut subquote2_font = self.subquote2_font.clone();
+        let mut tag_font = self.tag_font.clone();
+        let mut tag2_font = self.tag2_font.clone();
         let mut quote_font_ratio = self.quote_font_ratio.clone();
         let mut subquote_font_ratio = self.subquote_font_ratio.clone();
         let mut subquote2_font_ratio = self.subquote2_font_ratio.clone();
@@ -562,8 +567,8 @@ impl ConfigWindow {
         let mut tag2_position_ratio = self.tag2_position_ratio.clone();
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
-        let mut layer_rgb = self.layer_rgb.clone();
-        let mut layer_alpha = self.layer_alpha.clone();
+        let mut layer_rgb = self.translucent_layer_rgb.clone();
+        let mut layer_alpha = self.translucent_layer_alpha.clone();
         let mut browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
         let selected_browse_line = Rc::clone(&self.selected_browse_line);
@@ -587,11 +592,11 @@ impl ConfigWindow {
             *selected_browse_line.borrow_mut() = browse.value();
 
             if let Some(conf) = configs.borrow().get(&browse.selected_text().unwrap()) {
-                quote_font_ttf.set_value(&conf.quote_font_ttf);
-                subquote_font_ttf.set_value(&conf.subquote_font_ttf);
-                subquote2_font_ttf.set_value(&conf.subquote2_font_ttf);
-                tag_font_ttf.set_value(&conf.tag_font_ttf);
-                tag2_font_ttf.set_value(&conf.tag2_font_ttf);
+                quote_font.set_value(&conf.quote_font);
+                subquote_font.set_value(&conf.subquote_font);
+                subquote2_font.set_value(&conf.subquote2_font);
+                tag_font.set_value(&conf.tag_font);
+                tag2_font.set_value(&conf.tag2_font);
                 quote_font_ratio.set_value(conf.quote_font_ratio);
                 subquote_font_ratio.set_value(conf.subquote_font_ratio);
                 subquote2_font_ratio.set_value(conf.subquote2_font_ratio);
@@ -610,11 +615,12 @@ impl ConfigWindow {
             }
         });
 
-        let mut quote_font_ttf = self.quote_font_ttf.clone();
-        let mut subquote_font_ttf = self.subquote_font_ttf.clone();
-        let mut subquote2_font_ttf = self.subquote2_font_ttf.clone();
-        let mut tag_font_ttf = self.tag_font_ttf.clone();
-        let mut tag2_font_ttf = self.tag2_font_ttf.clone();
+        // Browse Config List
+        let mut quote_font = self.quote_font.clone();
+        let mut subquote_font = self.subquote_font.clone();
+        let mut subquote2_font = self.subquote2_font.clone();
+        let mut tag_font = self.tag_font.clone();
+        let mut tag2_font = self.tag2_font.clone();
         let mut quote_font_ratio = self.quote_font_ratio.clone();
         let mut subquote_font_ratio = self.subquote_font_ratio.clone();
         let mut subquote2_font_ratio = self.subquote2_font_ratio.clone();
@@ -627,8 +633,8 @@ impl ConfigWindow {
         let mut tag2_position_ratio = self.tag2_position_ratio.clone();
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
-        let mut layer_rgb = self.layer_rgb.clone();
-        let mut layer_alpha = self.layer_alpha.clone();
+        let mut layer_rgb = self.translucent_layer_rgb.clone();
+        let mut layer_alpha = self.translucent_layer_alpha.clone();
         let configs = Rc::clone(&self.configs);
         let selected_browse_line = Rc::clone(&self.selected_browse_line);
         self.browse.set_callback(move |f| {
@@ -642,11 +648,11 @@ impl ConfigWindow {
             }
 
             if let Some(conf) = configs.borrow().get(&f.selected_text().unwrap()) {
-                quote_font_ttf.set_value(&conf.quote_font_ttf);
-                subquote_font_ttf.set_value(&conf.subquote_font_ttf);
-                subquote2_font_ttf.set_value(&conf.subquote2_font_ttf);
-                tag_font_ttf.set_value(&conf.tag_font_ttf);
-                tag2_font_ttf.set_value(&conf.tag2_font_ttf);
+                quote_font.set_value(&conf.quote_font);
+                subquote_font.set_value(&conf.subquote_font);
+                subquote2_font.set_value(&conf.subquote2_font);
+                tag_font.set_value(&conf.tag_font);
+                tag2_font.set_value(&conf.tag2_font);
                 quote_font_ratio.set_value(conf.quote_font_ratio);
                 subquote_font_ratio.set_value(conf.subquote_font_ratio);
                 subquote2_font_ratio.set_value(conf.subquote2_font_ratio);
@@ -666,10 +672,11 @@ impl ConfigWindow {
             *selected_browse_line.borrow_mut() = f.value();
         });
 
+        // Browse for Quote Font
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
-        let mut quote_font_ttf = self.quote_font_ttf.clone();
-        self.quote_font_ttf_browse.set_callback(move |_| {
+        let mut quote_font = self.quote_font.clone();
+        self.quote_font_browse.set_callback(move |_| {
             let mut chooser = NativeFileChooser::new(fltk::dialog::FileDialogType::BrowseFile);
             chooser.set_option(FileDialogOptions::UseFilterExt);
             chooser.set_filter("*.ttf");
@@ -677,19 +684,20 @@ impl ConfigWindow {
             let path = chooser.filename();
             let path = std::fs::canonicalize(&path).unwrap_or(path);
             let path = path.to_str().unwrap();
-            quote_font_ttf.set_value(path);
+            quote_font.set_value(path);
             if let Some(conf) = configs
                 .borrow_mut()
                 .get_mut(&browse.selected_text().unwrap())
             {
-                conf.quote_font_ttf = path.to_owned();
+                conf.quote_font = path.to_owned();
             }
         });
 
+        // Browse for Subquote Font
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
-        let mut subquote_font_ttf = self.subquote_font_ttf.clone();
-        self.subquote_font_ttf_browse.set_callback(move |_| {
+        let mut subquote_font = self.subquote_font.clone();
+        self.subquote_font_browse.set_callback(move |_| {
             let mut chooser = NativeFileChooser::new(fltk::dialog::FileDialogType::BrowseFile);
             chooser.set_option(FileDialogOptions::UseFilterExt);
             chooser.set_filter("*.ttf");
@@ -697,19 +705,20 @@ impl ConfigWindow {
             let path = chooser.filename();
             let path = std::fs::canonicalize(&path).unwrap_or(path);
             let path = path.to_str().unwrap();
-            subquote_font_ttf.set_value(path);
+            subquote_font.set_value(path);
             if let Some(conf) = configs
                 .borrow_mut()
                 .get_mut(&browse.selected_text().unwrap())
             {
-                conf.subquote_font_ttf = path.to_owned();
+                conf.subquote_font = path.to_owned();
             }
         });
 
+        // Browse for Subquote2 Font
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
-        let mut subquote2_font_ttf = self.subquote2_font_ttf.clone();
-        self.subquote2_font_ttf_browse.set_callback(move |_| {
+        let mut subquote2_font = self.subquote2_font.clone();
+        self.subquote2_font_browse.set_callback(move |_| {
             let mut chooser = NativeFileChooser::new(fltk::dialog::FileDialogType::BrowseFile);
             chooser.set_option(FileDialogOptions::UseFilterExt);
             chooser.set_filter("*.ttf");
@@ -717,19 +726,20 @@ impl ConfigWindow {
             let path = chooser.filename();
             let path = std::fs::canonicalize(&path).unwrap_or(path);
             let path = path.to_str().unwrap();
-            subquote2_font_ttf.set_value(path);
+            subquote2_font.set_value(path);
             if let Some(conf) = configs
                 .borrow_mut()
                 .get_mut(&browse.selected_text().unwrap())
             {
-                conf.subquote2_font_ttf = path.to_owned();
+                conf.subquote2_font = path.to_owned();
             }
         });
 
+        // Browse for Tag Font
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
-        let mut tag_font_ttf = self.tag_font_ttf.clone();
-        self.tag_font_ttf_browse.set_callback(move |_| {
+        let mut tag_font = self.tag_font.clone();
+        self.tag_font_browse.set_callback(move |_| {
             let mut chooser = NativeFileChooser::new(fltk::dialog::FileDialogType::BrowseFile);
             chooser.set_option(FileDialogOptions::UseFilterExt);
             chooser.set_filter("*.ttf");
@@ -737,19 +747,20 @@ impl ConfigWindow {
             let path = chooser.filename();
             let path = std::fs::canonicalize(&path).unwrap_or(path);
             let path = path.to_str().unwrap();
-            tag_font_ttf.set_value(path);
+            tag_font.set_value(path);
             if let Some(conf) = configs
                 .borrow_mut()
                 .get_mut(&browse.selected_text().unwrap())
             {
-                conf.tag_font_ttf = path.to_owned();
+                conf.tag_font = path.to_owned();
             }
         });
 
+        // Browse for Tag2 Font
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
-        let mut tag2_font_ttf = self.tag2_font_ttf.clone();
-        self.tag2_font_ttf_browse.set_callback(move |_| {
+        let mut tag2_font = self.tag2_font.clone();
+        self.tag2_font_browse.set_callback(move |_| {
             let mut chooser = NativeFileChooser::new(fltk::dialog::FileDialogType::BrowseFile);
             chooser.set_option(FileDialogOptions::UseFilterExt);
             chooser.set_filter("*.ttf");
@@ -757,12 +768,12 @@ impl ConfigWindow {
             let path = chooser.filename();
             let path = std::fs::canonicalize(&path).unwrap_or(path);
             let path = path.to_str().unwrap();
-            tag2_font_ttf.set_value(path);
+            tag2_font.set_value(path);
             if let Some(conf) = configs
                 .borrow_mut()
                 .get_mut(&browse.selected_text().unwrap())
             {
-                conf.tag2_font_ttf = path.to_owned();
+                conf.tag2_font = path.to_owned();
             }
         });
 
@@ -771,8 +782,7 @@ impl ConfigWindow {
             win.hide();
         });
 
-        // Font size ratio
-
+        // Quote font size ratio
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
         self.quote_font_ratio.handle(move |f, ev| {
@@ -787,6 +797,7 @@ impl ConfigWindow {
             true
         });
 
+        // Subquote font size ratio
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
         self.subquote_font_ratio.handle(move |f, ev| {
@@ -801,6 +812,7 @@ impl ConfigWindow {
             true
         });
 
+        // Subquote2 font size ratio
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
         self.subquote2_font_ratio.handle(move |f, ev| {
@@ -815,6 +827,7 @@ impl ConfigWindow {
             true
         });
 
+        // Tag font size ratio
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
         self.tag_font_ratio.handle(move |f, ev| {
@@ -829,6 +842,7 @@ impl ConfigWindow {
             true
         });
 
+        // Tag2 font size ratio
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
         self.tag2_font_ratio.handle(move |f, ev| {
@@ -843,8 +857,7 @@ impl ConfigWindow {
             true
         });
 
-        // text Position
-
+        // Quote position ratio
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
         self.quote_position_ratio.handle(move |f, ev| {
@@ -859,6 +872,7 @@ impl ConfigWindow {
             true
         });
 
+        // Subquote position ratio
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
         self.subquote_position_ratio.handle(move |f, ev| {
@@ -873,6 +887,7 @@ impl ConfigWindow {
             true
         });
 
+        // Subquote2 position ratio
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
         self.subquote2_position_ratio.handle(move |f, ev| {
@@ -887,6 +902,7 @@ impl ConfigWindow {
             true
         });
 
+        // Tag position ratio
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
         self.tag_position_ratio.handle(move |f, ev| {
@@ -901,6 +917,7 @@ impl ConfigWindow {
             true
         });
 
+        // Tag2 position ratio
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
         self.tag2_position_ratio.handle(move |f, ev| {
@@ -915,7 +932,7 @@ impl ConfigWindow {
             true
         });
 
-        // iamge ratio
+        // Image Ratio Width
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
         self.image_ratio_width.handle(move |f, ev| {
@@ -930,6 +947,7 @@ impl ConfigWindow {
             true
         });
 
+        // Image Ratio Height
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
         self.image_ratio_height.handle(move |f, ev| {
@@ -944,11 +962,10 @@ impl ConfigWindow {
             true
         });
 
-        // Color
-
+        // Translucent Layer RGB
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
-        self.layer_rgb.set_callback(move |mut f| {
+        self.translucent_layer_rgb.set_callback(move |mut f| {
             if let Some(conf) = configs
                 .borrow_mut()
                 .get_mut(&browse.selected_text().unwrap())
@@ -968,9 +985,10 @@ impl ConfigWindow {
             }
         });
 
+        // Translucent Layer Opacity
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
-        self.layer_alpha.handle(move |f, ev| {
+        self.translucent_layer_alpha.handle(move |f, ev| {
             if ev == Event::KeyUp {
                 if f.value() > 255.0 {
                     f.set_value(255.0);
@@ -988,11 +1006,12 @@ impl ConfigWindow {
             true
         });
 
-        let mut quote_font_ttf = self.quote_font_ttf.clone();
-        let mut subquote_font_ttf = self.subquote_font_ttf.clone();
-        let mut subquote2_font_ttf = self.subquote2_font_ttf.clone();
-        let mut tag_font_ttf = self.tag_font_ttf.clone();
-        let mut tag2_font_ttf = self.tag2_font_ttf.clone();
+        // Reset to default configuation button
+        let mut quote_font = self.quote_font.clone();
+        let mut subquote_font = self.subquote_font.clone();
+        let mut subquote2_font = self.subquote2_font.clone();
+        let mut tag_font = self.tag_font.clone();
+        let mut tag2_font = self.tag2_font.clone();
         let mut quote_font_ratio = self.quote_font_ratio.clone();
         let mut subquote_font_ratio = self.subquote_font_ratio.clone();
         let mut subquote2_font_ratio = self.subquote2_font_ratio.clone();
@@ -1005,17 +1024,17 @@ impl ConfigWindow {
         let mut tag2_position_ratio = self.tag2_position_ratio.clone();
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
-        let mut layer_rgb = self.layer_rgb.clone();
-        let mut layer_alpha = self.layer_alpha.clone();
+        let mut layer_rgb = self.translucent_layer_rgb.clone();
+        let mut layer_alpha = self.translucent_layer_alpha.clone();
         let configs = Rc::clone(&self.configs);
         let browse = self.browse.clone();
         self.defaults_btn.set_callback(move |_| {
             let conf = ConfigFile::default();
-            quote_font_ttf.set_value(&conf.quote_font_ttf);
-            subquote_font_ttf.set_value(&conf.subquote_font_ttf);
-            subquote2_font_ttf.set_value(&conf.subquote2_font_ttf);
-            tag_font_ttf.set_value(&conf.tag_font_ttf);
-            tag2_font_ttf.set_value(&conf.tag2_font_ttf);
+            quote_font.set_value(&conf.quote_font);
+            subquote_font.set_value(&conf.subquote_font);
+            subquote2_font.set_value(&conf.subquote2_font);
+            tag_font.set_value(&conf.tag_font);
+            tag2_font.set_value(&conf.tag2_font);
             quote_font_ratio.set_value(conf.quote_font_ratio);
             subquote_font_ratio.set_value(conf.subquote_font_ratio);
             subquote2_font_ratio.set_value(conf.subquote2_font_ratio);
@@ -1036,6 +1055,7 @@ impl ConfigWindow {
                 .insert(browse.selected_text().unwrap(), conf);
         });
 
+        // Save Button
         let configs = Rc::clone(&self.configs);
         let did_save = Rc::clone(&self.did_save);
         let mut win = self.win.clone();
