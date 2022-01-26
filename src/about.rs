@@ -15,7 +15,9 @@
 //! About Window
 use crate::{config, globals};
 use fltk::{
-    app, dialog,
+    app,
+    button::Button,
+    dialog,
     enums::{self, Align, Event},
     frame::Frame,
     group::Flex,
@@ -29,6 +31,7 @@ pub(crate) struct About {
     pub(crate) repo_link: Frame,
     pub(crate) dev_link: Frame,
     pub(crate) license_link: Frame,
+    pub(crate) close_btn: Button,
 }
 
 impl About {
@@ -109,6 +112,17 @@ impl About {
         license.set_label_size(13);
         main_flex.set_size(&license, 25);
 
+        // Panel
+        let mut panel_flex = Flex::default().row();
+        Frame::default();
+        let close_btn = Button::default().with_label("Close");
+        Frame::default();
+        panel_flex.set_size(&close_btn, 100);
+        panel_flex.end();
+        main_flex.set_size(&panel_flex, 30);
+
+        main_flex.set_size(&Frame::default(), 5);
+
         main_flex.end();
 
         win.end();
@@ -119,6 +133,7 @@ impl About {
             repo_link,
             dev_link,
             license_link,
+            close_btn,
         };
         about.event();
 
@@ -165,6 +180,12 @@ impl About {
                 }
             }
             true
+        });
+
+        // Close Button
+        let mut win = self.win.clone();
+        self.close_btn.set_callback(move |_| {
+            win.hide();
         });
     }
 }
