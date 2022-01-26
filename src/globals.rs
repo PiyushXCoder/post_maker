@@ -113,6 +113,9 @@ lazy_static! {
     /// Image to use for Window
     pub(crate) static ref ICON: OsString = include_str!("../assets/icon.svg").into();
 
+    /// Image to use for About
+    pub(crate) static ref ICON_WITH_TEXT: OsString = include_str!("../assets/icon_with_text.svg").into();
+
     /// Image to use for Reload Button
     pub(crate) static ref RELOAD_ICON: OsString = {
         let img = include_str!("../assets/reload.svg");

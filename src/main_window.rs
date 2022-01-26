@@ -13,6 +13,7 @@
 */
 
 //! Main window where you do all editing
+use crate::about::About;
 use crate::crop_window::CropWindow;
 use crate::draw_thread::*;
 use crate::utils;
@@ -455,14 +456,13 @@ impl MainWindow {
             },
         );
 
+        let mut about_win = About::new();
         self.menubar.add(
             "&Help/About...\t",
             Shortcut::None,
             menu::MenuFlag::Normal,
             move |_| {
-                dialog::alert_default(
-                    "Created with <3 by PiyushXCoder\nhttps://github.com/PiyushXCoder",
-                );
+                about_win.show();
             },
         );
     }
