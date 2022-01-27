@@ -33,6 +33,7 @@ use std::{
 pub(crate) struct CropWindow {
     pub(crate) win: Window,
     apply_btn: Button,
+    cancel_btn: Button,
     container: Rc<RefCell<Option<ImageContainer>>>,
     page: Page,
 }
@@ -70,9 +71,11 @@ impl CropWindow {
         let top_padding_btn = Frame::default();
         let mut panel_flex = Flex::default().row();
         Frame::default();
-        let apply_btn = Button::default().with_label("apply");
-        Frame::default();
+        let apply_btn = Button::default().with_label("Apply");
         panel_flex.set_size(&apply_btn, 100);
+        let cancel_btn = Button::default().with_label("Cancel");
+        panel_flex.set_size(&cancel_btn, 100);
+        panel_flex.set_size(&Frame::default(), 10);
         panel_flex.end();
         let bottom_padding_btn = Frame::default();
 
@@ -88,6 +91,7 @@ impl CropWindow {
         let mut crop_win = Self {
             win,
             apply_btn,
+            cancel_btn,
             container: Rc::new(RefCell::new(None)),
             page: Page {
                 image_view: img_view,
@@ -199,7 +203,11 @@ impl CropWindow {
 
                 let mut prop = cont.properties.write().unwrap();
 
-                let (original_x, original_y) = prop.crop_position.unwrap();
+                let (original_x, original_y) = match prop.crop_position {
+                    Some(v) => v,
+                    None => return true,
+                };
+
                 let (original_width, original_heigth) = prop.original_dimension;
                 let (original_bound_width, original_bound_height) =
                     utils::croped_ratio(original_width, original_heigth);
@@ -251,9 +259,22 @@ impl CropWindow {
         });
 
         // Window close
-        let mut wind = self.win.clone();
+        let mut win = self.win.clone();
         self.apply_btn.set_callback(move |_| {
-            wind.do_callback();
+            win.hide();
+        });
+
+        let mut win = self.win.clone();
+        self.cancel_btn.set_callback(move |_| {
+            win.do_callback();
+        });
+
+        let container = Rc::clone(&self.container);
+        self.win.set_callback(move |f| {
+            if let Some(cont) = &*container.borrow_mut() {
+                cont.properties.write().unwrap().crop_position = None;
+            }
+            f.hide();
         });
     }
 }
