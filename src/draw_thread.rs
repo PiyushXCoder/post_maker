@@ -258,16 +258,16 @@ fn load_image(
 
     if let Some(cont) = container {
         let file = Path::new(&file);
-        let conf = file.with_extension("conf");
+        let properties_file = file.with_extension("prop");
 
-        let read = fs::read_to_string(&conf).unwrap_or("{}".to_owned());
+        let read = fs::read_to_string(&properties_file).unwrap_or("{}".to_owned());
         let read = match serde_json::from_str::<ImagePropertiesFile>(&read) {
             Ok(r) => r,
             Err(e) => {
                 warn!("Config is corrupt\n{:?}", e);
                 match dialog::choice_default("Config is corrupt, fix??", "yes", "no", "") {
                     1 => {
-                        if let Err(e) = fs::remove_file(&conf) {
+                        if let Err(e) = fs::remove_file(&properties_file) {
                             dialog::alert_default("Failed to delete image properties file!");
                             warn!("Failed to delete image properties file!\n{:?}", e);
                         }
