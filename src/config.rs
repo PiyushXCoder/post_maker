@@ -19,12 +19,7 @@ use fltk::dialog;
 use fltk_theme::ThemeType;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    fs::File,
-    path::PathBuf,
-    time::{Duration, SystemTime},
-};
+use std::{collections::HashMap, fs::File, path::PathBuf};
 
 lazy_static! {
     /// Directory where all Configurations are present
@@ -218,38 +213,39 @@ pub(crate) fn save_configs(configs: HashMap<String, ConfigFile>) {
 }
 
 pub(crate) fn log_file() -> File {
-    match File::open(&*LOG_FILE) {
-        Ok(mut file) => {
-            if is_file_30_days_old(&file) {
-                match File::create(&*LOG_FILE) {
-                    Ok(f) => file = f,
-                    Err(e) => {
-                        dialog::alert_default("Can't open log file!");
-                        panic!("{:?}", e);
-                    }
-                }
-            }
-            file
+    // match File::open(&*LOG_FILE) {
+    //     Ok(mut file) => {
+    //         if is_file_30_days_old(&file) {
+    //             match File::create(&*LOG_FILE) {
+    //                 Ok(f) => file = f,
+    //                 Err(e) => {
+    //                     dialog::alert_default("Can't open log file!");
+    //                     panic!("{:?}", e);
+    //                 }
+    //             }
+    //         }
+    //         file
+    //     }
+    //     Err(_) =>
+    match File::create(&*LOG_FILE) {
+        Ok(f) => f,
+        Err(e) => {
+            dialog::alert_default("Can't open log file!");
+            panic!("{:?}", e);
         }
-        Err(_) => match File::create(&*LOG_FILE) {
-            Ok(f) => f,
-            Err(e) => {
-                dialog::alert_default("Can't open log file!");
-                panic!("{:?}", e);
-            }
-        },
     }
+    // }
 }
 
-pub(crate) fn is_file_30_days_old(file: &File) -> bool {
-    if let Ok(meta) = file.metadata() {
-        if let Ok(time) = meta.created() {
-            if let Ok(dur) = SystemTime::now().duration_since(time) {
-                if dur > Duration::from_secs(60 * 60 * 24 * 30) {
-                    return true;
-                }
-            }
-        }
-    }
-    false
-}
+// pub(crate) fn is_file_30_days_old(file: &File) -> bool {
+//     if let Ok(meta) = file.metadata() {
+//         if let Ok(time) = meta.created() {
+//             if let Ok(dur) = SystemTime::now().duration_since(time) {
+//                 if dur > Duration::from_secs(60 * 60 * 24 * 30) {
+//                     return true;
+//                 }
+//             }
+//         }
+//     }
+//     false
+// }

@@ -47,11 +47,15 @@ fn main() {
     let app = App::default();
     WidgetTheme::new(globals::THEME.clone().into()).apply();
 
-    if let Err(e) = CombinedLogger::init(vec![WriteLogger::new(
-        LevelFilter::Info,
-        Config::default(),
-        config::log_file(),
-    )]) {
+    if let Err(e) = CombinedLogger::init(vec![
+        WriteLogger::new(LevelFilter::Warn, Config::default(), config::log_file()),
+        TermLogger::new(
+            LevelFilter::Info,
+            Config::default(),
+            TerminalMode::Mixed,
+            ColorChoice::Auto,
+        ),
+    ]) {
         dialog::alert_default("Failed to start logger");
         panic!("Failed to start logger\n{:?}", e);
     }
