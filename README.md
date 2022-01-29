@@ -6,7 +6,20 @@
 
 > Post Maker helps you to make post for instagram and other social media apps easily.
 
-## Compiling
+## Installing
+
+### Windows
+
+There are two ways to get Post Maker for windows. 
+
+* You can download a stable version from release
+* You can build it yourself from git or released source
+
+### Linux
+
+We recommend you to build it yourself. 
+
+## Building
 
 ### Build Dependencies
 
