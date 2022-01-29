@@ -10,14 +10,14 @@
 
 ### Windows
 
-There are two ways to get Post Maker for windows. 
+There are two ways to get Post Maker for windows.
 
 * You can download a stable version from release
 * You can build it yourself from git or released source
 
 ### Linux
 
-We recommend you to build it yourself. 
+We recommend you to build it yourself.
 
 ## Building
 
@@ -26,7 +26,7 @@ We recommend you to build it yourself.
 * Rust Compiler
 * Cargo
 
-### Installing rust
+### Installing Rust
 
 You can follow rust's official guide to install rust compiler and cargo [here](https://www.rust-lang.org/tools/install).
 
