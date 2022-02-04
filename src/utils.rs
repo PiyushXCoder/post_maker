@@ -426,10 +426,7 @@ impl ImageProperties {
         tag_default: &str,
         tag2_default: &str,
     ) {
-        if let Some(v) = props.crop_position {
-            self.crop_position = Some(v);
-        }
-
+        self.crop_position = props.crop_position;
         self.quote = props.quote.unwrap_or("".to_owned());
         self.subquote = props.subquote.unwrap_or("".to_owned());
         self.subquote2 = props.subquote2.unwrap_or("".to_owned());
