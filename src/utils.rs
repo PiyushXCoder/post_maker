@@ -121,8 +121,8 @@ impl ImageContainer {
         let (origina_crop_width, origina_crop_height) =
             croped_ratio(original_width, original_height);
         prop.crop_position = Some((
-            original_width / 2.0 - origina_crop_width / 2.0,
-            original_height / 2.0 - origina_crop_height / 2.0,
+            (original_width - origina_crop_width) / 2.0,
+            (original_height - origina_crop_height) / 2.0,
         ));
 
         let (s_width, s_height): (f64, f64) = Coord::from(self.image.dimensions()).into();

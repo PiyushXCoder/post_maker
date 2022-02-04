@@ -169,9 +169,10 @@ pub(crate) fn spawn_image_thread(
                         status.set_label("Saving...");
                         win.deactivate();
                         cont.save();
+                        status.set_label("");
                         win.activate();
                         win.redraw();
-                        status.set_label("");
+                        app::awake();
                     }
                 }
                 DrawMessage::Clone => {
@@ -194,6 +195,7 @@ pub(crate) fn spawn_image_thread(
                         status.set_label("");
                         win.activate();
                         win.redraw();
+                        app::awake();
                     }
                 }
                 DrawMessage::Delete => {
@@ -212,6 +214,7 @@ pub(crate) fn spawn_image_thread(
                         status.set_label("");
                         win.activate();
                         win.redraw();
+                        app::awake();
                     }
                 }
             }
