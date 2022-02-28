@@ -30,12 +30,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anyhow"
-version = "1.0.55"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "159bb86af3a200e19a068f4224eae4c8bb2d0fa054c7e5d1cacd5cef95e684cd"
-
-[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -632,7 +626,7 @@ dependencies = [
 
 [[package]]
 name = "post_maker"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "clap",
  "dirs",
@@ -647,7 +641,6 @@ dependencies = [
  "serde_json",
  "simplelog",
  "textwrap",
- "turbojpeg",
  "webbrowser",
 ]
 
@@ -940,26 +933,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "thiserror"
-version = "1.0.30"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "854babe52e4df1653706b98fcfc05843010039b406875930a70e4d9644e5c417"
-dependencies = [
- "thiserror-impl",
-]
-
-[[package]]
-name = "thiserror-impl"
-version = "1.0.30"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa32fd3f627f367fe16f893e2597ae3c05020f8bba2666a4e6ea73d377e5714b"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "tiff"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -985,28 +958,6 @@ name = "ttf-parser"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e5d7cd7ab3e47dda6e56542f4bbf3824c15234958c6e1bd6aaa347e93499fdc"
-
-[[package]]
-name = "turbojpeg"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "111671fdf720903270c8c19fd641048793a4f8f69abc184e4e7ea9228619c65e"
-dependencies = [
- "image",
- "libc",
- "thiserror",
- "turbojpeg-sys",
-]
-
-[[package]]
-name = "turbojpeg-sys"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03ee42589a950ef4f0f03752c3878676ffe6ab5a468132784ba483b0efc257e6"
-dependencies = [
- "anyhow",
- "libc",
-]
 
 [[package]]
 name = "unicode-linebreak"

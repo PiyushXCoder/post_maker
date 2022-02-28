@@ -13,7 +13,7 @@
 */
 
 use std::{
-    fs,
+    fs::{self, File},
     path::{Path, PathBuf},
     sync::{Arc, RwLock},
 };
@@ -236,16 +236,19 @@ impl ImageContainer {
             prop.original_dimension.1,
         );
 
-        let comp = match turbojpeg::compress_image(&img.into_rgb8(), 95, turbojpeg::Subsamp::None) {
+        let mut output = match File::create(&export) {
             Ok(a) => a,
             Err(e) => {
-                dialog::alert_default("Failed to compress jpeg!");
-                warn!("Failed to compress jpeg!\n{:?}", e);
+                dialog::alert_default("Failed to write to disk!");
+                warn!("Failed to write to disk!\n{:?}", e);
                 return;
             }
         };
 
-        if let Err(e) = std::fs::write(&export, comp) {
+        let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut output, 100);
+        encoder.set_pixel_density(image::codecs::jpeg::PixelDensity::dpi(300));
+
+        if let Err(e) = encoder.encode_image(&img) {
             dialog::alert_default("Failed to export Image!");
             warn!("Failed to export Image!\n{:?}", e);
         }
