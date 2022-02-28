@@ -13,7 +13,7 @@
 */
 
 //! Main window where you do all editing
-use crate::about::About;
+use crate::about_window::About;
 use crate::crop_window::CropWindow;
 use crate::draw_thread::*;
 use crate::utils;

@@ -192,7 +192,7 @@ impl ImageContainer {
         let path_properties = path_original.with_extension("prop");
         let export = path_original.parent().unwrap().join("export").join(
             path_original
-                .with_extension("png")
+                .with_extension("jpg")
                 .file_name()
                 .unwrap()
                 .to_str()
@@ -236,9 +236,18 @@ impl ImageContainer {
             prop.original_dimension.1,
         );
 
-        if let Err(e) = img.save_with_format(&export, image::ImageFormat::Png) {
-            dialog::alert_default("Failed to export png!");
-            warn!("Failed to export png!\n{:?}", e);
+        let comp = match turbojpeg::compress_image(&img.into_rgb8(), 95, turbojpeg::Subsamp::None) {
+            Ok(a) => a,
+            Err(e) => {
+                dialog::alert_default("Failed to compress jpeg!");
+                warn!("Failed to compress jpeg!\n{:?}", e);
+                return;
+            }
+        };
+
+        if let Err(e) = std::fs::write(&export, comp) {
+            dialog::alert_default("Failed to export Image!");
+            warn!("Failed to export Image!\n{:?}", e);
         }
     }
 
@@ -290,7 +299,7 @@ impl ImageContainer {
         let path_properties = path_original.with_extension("prop");
         let export = path_original.parent().unwrap().join("export").join(
             path_original
-                .with_extension("png")
+                .with_extension("jpg")
                 .file_name()
                 .unwrap()
                 .to_str()

@@ -17,7 +17,7 @@
 extern crate log;
 extern crate simplelog;
 
-mod about;
+mod about_window;
 mod config;
 mod config_picker;
 mod config_window;

@@ -188,7 +188,7 @@ impl ConfigWindow {
         let mut label = Frame::default().with_label("Ratio of size of text:");
         label.set_label_font(enums::Font::HelveticaBold);
         col.set_size(&label, 15);
-        let mut hint = Frame::default().with_label("Font size in image of resolution 4000x5000");
+        let mut hint = Frame::default().with_label("Font size in image of height 4000 pixels");
         hint.set_label_font(Font::CourierItalic);
         hint.set_label_size(12);
         col.set_size(&hint, 20);
