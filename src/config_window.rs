@@ -19,11 +19,11 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use fltk::{
     app,
     browser::{Browser, BrowserType},
-    button::Button,
+    button::{Button, RadioRoundButton},
     dialog::{self, FileDialogOptions, NativeFileChooser},
     enums::{self, Align, Event, Font},
     frame::Frame,
-    group::Flex,
+    group::{Flex, Scroll},
     image::SvgImage,
     output::Output,
     prelude::*,
@@ -68,6 +68,8 @@ pub(crate) struct ConfigWindow {
     pub(crate) translucent_layer_rgb: Button,
     /// opacity value of top translucent layer
     pub(crate) translucent_layer_alpha: ValueInput,
+    pub(crate) png_format: RadioRoundButton,
+    pub(crate) jpeg_format: RadioRoundButton,
     pub(crate) defaults_btn: Button,
     pub(crate) save_btn: Button,
     pub(crate) cancel_btn: Button,
@@ -78,12 +80,16 @@ pub(crate) struct ConfigWindow {
 impl ConfigWindow {
     pub(crate) fn new() -> Self {
         let configs = config::get_configs().unwrap_or(HashMap::new());
-        let mut win = Window::new(0, 0, 900, 680, "Config").center_screen();
+        let mut win = Window::new(0, 0, 900, 600, "Config").center_screen();
         win.set_icon(Some(
             SvgImage::from_data(globals::ICON.to_str().unwrap()).unwrap(),
         ));
-        let mut row = Flex::default().with_size(890, 670).with_pos(5, 5).row();
-        let mut config_picker_flex = Flex::default().column();
+
+        // Config picking area
+        let mut config_picker_flex = Flex::default()
+            .with_size(200, win.height() - 50)
+            .with_pos(5, 5)
+            .column();
         // Picker
         let browse = Browser::default().with_type(BrowserType::Hold);
 
@@ -103,9 +109,30 @@ impl ConfigWindow {
         config_picker_flex.set_size(&panel_flex, 30);
         config_picker_flex.set_size(&bottom_padding_btn, 5);
         config_picker_flex.end();
-        row.set_size(&config_picker_flex, 200);
 
-        let mut col = Flex::default().column();
+        // Bottom Panel
+        let mut panel_grp = Flex::default()
+            .with_size(win.width() - 10, 30)
+            .with_pos(5, win.height() - 40)
+            .row();
+        Frame::default();
+        let defaults_btn = Button::default().with_label("Defaults");
+        let save_btn = Button::default().with_label("Save");
+        let cancel_btn = Button::default().with_label("Cancel");
+        panel_grp.set_size(&defaults_btn, 100);
+        panel_grp.set_size(&save_btn, 100);
+        panel_grp.set_size(&cancel_btn, 100);
+        panel_grp.end();
+
+        // Rest everything
+        let mut scroll = Scroll::default()
+            .with_size(win.width() - 210, win.height() - 50)
+            .with_pos(205, 5);
+
+        let mut col = Flex::default()
+            .with_size(scroll.width() - 35, 700)
+            .column()
+            .with_pos(100, 0);
 
         let mut label = Frame::default().with_label("Fonts:");
         label.set_label_font(enums::Font::HelveticaBold);
@@ -358,7 +385,7 @@ impl ConfigWindow {
         col.set_size(&hint, 20);
 
         let mut translucent_layer_flex = Flex::default().row();
-        translucent_layer_flex.set_pad(2);
+        translucent_layer_flex.set_size(&Frame::default(), 20);
         translucent_layer_flex.set_size(&Frame::default().with_label("Colour"), 50);
         let mut translucent_layer_rgb = Button::default();
         translucent_layer_rgb.set_frame(enums::FrameType::BorderBox);
@@ -368,25 +395,32 @@ impl ConfigWindow {
         translucent_layer_flex.end();
         col.set_size(&translucent_layer_flex, 30);
 
+        let mut label = Frame::default().with_label("Export Format:");
+        label.set_label_font(enums::Font::HelveticaBold);
+        col.set_size(&label, 15);
+
+        let mut hint = Frame::default().with_label("Image format to export image");
+        hint.set_label_font(Font::CourierItalic);
+        hint.set_label_size(12);
+        col.set_size(&hint, 20);
+
+        let mut image_format_flex = Flex::default().row();
+        image_format_flex.set_size(&Frame::default(), 20);
+        let mut png_format = RadioRoundButton::default().with_label("Png");
+        png_format.set_value(true);
+        let jpeg_format = RadioRoundButton::default().with_label("Jpeg");
+        image_format_flex.end();
+        col.set_size(&image_format_flex, 30);
+
         Frame::default();
-
-        let mut panel_grp = Flex::default().row();
-        Frame::default();
-        let defaults_btn = Button::default().with_label("Defaults");
-        let save_btn = Button::default().with_label("Save");
-        let cancel_btn = Button::default().with_label("Cancel");
-        panel_grp.set_size(&defaults_btn, 100);
-        panel_grp.set_size(&save_btn, 100);
-        panel_grp.set_size(&cancel_btn, 100);
-        panel_grp.end();
-
-        col.set_size(&panel_grp, 30);
-
         col.end();
-        row.end();
+
+        scroll.end();
+        scroll.make_resizable(true);
+        scroll.scroll_to(-1 * col.x() - 5, -1 * col.y() - 5);
+
         win.end();
         win.make_modal(true);
-        win.make_resizable(true);
 
         let mut config_window = Self {
             win,
@@ -418,6 +452,8 @@ impl ConfigWindow {
             image_ratio_height,
             translucent_layer_rgb,
             translucent_layer_alpha,
+            png_format,
+            jpeg_format,
             defaults_btn,
             save_btn,
             cancel_btn,
@@ -1006,6 +1042,30 @@ impl ConfigWindow {
             true
         });
 
+        // Png Image format
+        let browse = self.browse.clone();
+        let configs = Rc::clone(&self.configs);
+        self.png_format.set_callback(move |_| {
+            if let Some(conf) = configs
+                .borrow_mut()
+                .get_mut(&browse.selected_text().unwrap())
+            {
+                conf.image_format = "png".to_owned();
+            }
+        });
+
+        // Jpeg Image format
+        let browse = self.browse.clone();
+        let configs = Rc::clone(&self.configs);
+        self.jpeg_format.set_callback(move |_| {
+            if let Some(conf) = configs
+                .borrow_mut()
+                .get_mut(&browse.selected_text().unwrap())
+            {
+                conf.image_format = "jpeg".to_owned();
+            }
+        });
+
         // Reset to default configuation button
         let mut quote_font = self.quote_font.clone();
         let mut subquote_font = self.subquote_font.clone();
@@ -1026,6 +1086,8 @@ impl ConfigWindow {
         let mut image_ratio_height = self.image_ratio_height.clone();
         let mut layer_rgb = self.translucent_layer_rgb.clone();
         let mut layer_alpha = self.translucent_layer_alpha.clone();
+        let mut png_format = self.png_format.clone();
+        let mut jpeg_format = self.jpeg_format.clone();
         let configs = Rc::clone(&self.configs);
         let browse = self.browse.clone();
         self.defaults_btn.set_callback(move |_| {
@@ -1050,6 +1112,8 @@ impl ConfigWindow {
             utils::set_color_btn_rgba(conf.color_layer, &mut layer_rgb);
             layer_rgb.redraw();
             layer_alpha.set_value(conf.color_layer[3] as f64);
+            png_format.set_value(true);
+            jpeg_format.set_value(false);
             configs
                 .borrow_mut()
                 .insert(browse.selected_text().unwrap(), conf);

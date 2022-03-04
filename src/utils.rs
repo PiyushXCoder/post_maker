@@ -19,7 +19,7 @@ use std::{
 };
 
 use fltk::{button::Button, dialog, enums, prelude::*};
-use image::{DynamicImage, GenericImageView, ImageBuffer};
+use image::{DynamicImage, GenericImageView, ImageBuffer, ImageEncoder};
 use serde::{Deserialize, Serialize};
 
 use crate::globals;
@@ -181,7 +181,7 @@ impl ImageContainer {
         self.buffer = tmp;
     }
 
-    /// Save image anf properities
+    /// Save image and properities
     pub(crate) fn save(&self) {
         let prop = self.properties.read().unwrap();
 
@@ -190,9 +190,11 @@ impl ImageContainer {
             None => return,
         };
         let path_properties = path_original.with_extension("prop");
+        let config = globals::CONFIG.read().unwrap();
+        let export_format = config.image_format.as_str();
         let export = path_original.parent().unwrap().join("export").join(
             path_original
-                .with_extension("jpg")
+                .with_extension(export_format)
                 .file_name()
                 .unwrap()
                 .to_str()
@@ -245,12 +247,33 @@ impl ImageContainer {
             }
         };
 
-        let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut output, 100);
-        encoder.set_pixel_density(image::codecs::jpeg::PixelDensity::dpi(300));
+        match export_format {
+            "png" => {
+                let encoder = image::codecs::png::PngEncoder::new_with_quality(
+                    &mut output,
+                    image::png::CompressionType::Default,
+                    image::png::FilterType::NoFilter,
+                );
 
-        if let Err(e) = encoder.encode_image(&img) {
-            dialog::alert_default("Failed to export Image!");
-            warn!("Failed to export Image!\n{:?}", e);
+                let (w, h) = img.dimensions();
+                if let Err(e) =
+                    encoder.write_image(&img.into_rgba8(), w, h, image::ColorType::Rgba8)
+                {
+                    dialog::alert_default("Failed to export Image!");
+                    warn!("Failed to export Image!\n{:?}", e);
+                }
+            }
+            "jpeg" => {
+                let mut encoder =
+                    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut output, 100);
+                encoder.set_pixel_density(image::codecs::jpeg::PixelDensity::dpi(300));
+
+                if let Err(e) = encoder.encode_image(&img) {
+                    dialog::alert_default("Failed to export Image!");
+                    warn!("Failed to export Image!\n{:?}", e);
+                }
+            }
+            _ => (),
         }
     }
 

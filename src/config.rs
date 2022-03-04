@@ -128,6 +128,7 @@ pub(crate) struct ConfigFile {
     pub(crate) tag2_position_ratio: f64,
     pub(crate) image_ratio: (f64, f64),
     pub(crate) color_layer: [u8; 4],
+    pub(crate) image_format: String,
 }
 
 impl Default for ConfigFile {
@@ -138,7 +139,7 @@ impl Default for ConfigFile {
             subquote2_font: String::new(),
             tag_font: String::new(),
             tag2_font: String::new(),
-            quote_font_ratio: 230.0,
+            quote_font_ratio: 250.0,
             subquote_font_ratio: 230.0,
             subquote2_font_ratio: 230.0,
             tag_font_ratio: 150.0,
@@ -150,6 +151,7 @@ impl Default for ConfigFile {
             tag2_position_ratio: 0.95,
             image_ratio: (4.0, 5.0),
             color_layer: [20, 22, 25, 197],
+            image_format: "png".to_owned(),
         }
     }
 }
