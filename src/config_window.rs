@@ -504,6 +504,19 @@ impl ConfigWindow {
         utils::set_color_btn_rgba(config.color_layer, &mut self.translucent_layer_rgb);
         self.translucent_layer_alpha
             .set_value(config.color_layer[3] as f64);
+
+        match config.image_format.as_str() {
+            "png" => {
+                self.png_format.set_value(true);
+                self.jpeg_format.set_value(false)
+            }
+            "jpg" => {
+                self.png_format.set_value(false);
+                self.jpeg_format.set_value(true)
+            }
+            _ => (),
+        }
+
         *self.did_save.borrow_mut() = false;
         drop(config);
         self.win.show();
@@ -1062,7 +1075,7 @@ impl ConfigWindow {
                 .borrow_mut()
                 .get_mut(&browse.selected_text().unwrap())
             {
-                conf.image_format = "jpeg".to_owned();
+                conf.image_format = "jpg".to_owned();
             }
         });
 

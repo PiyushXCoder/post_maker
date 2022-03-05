@@ -263,7 +263,7 @@ impl ImageContainer {
                     warn!("Failed to export Image!\n{:?}", e);
                 }
             }
-            "jpeg" => {
+            "jpg" => {
                 let mut encoder =
                     image::codecs::jpeg::JpegEncoder::new_with_quality(&mut output, 100);
                 encoder.set_pixel_density(image::codecs::jpeg::PixelDensity::dpi(300));
@@ -317,6 +317,8 @@ impl ImageContainer {
 
     pub(crate) fn delete(&self) {
         let prop = self.properties.read().unwrap();
+        let config = globals::CONFIG.read().unwrap();
+        let export_format = config.image_format.as_str();
 
         let path_original = match &prop.path {
             Some(p) => Path::new(p),
@@ -325,7 +327,7 @@ impl ImageContainer {
         let path_properties = path_original.with_extension("prop");
         let export = path_original.parent().unwrap().join("export").join(
             path_original
-                .with_extension("jpg")
+                .with_extension(export_format)
                 .file_name()
                 .unwrap()
                 .to_str()
