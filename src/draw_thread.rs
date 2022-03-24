@@ -14,7 +14,8 @@
 
 //! Thread to manage drawing in background
 
-use crate::utils::{ImageContainer, ImageProperties};
+use crate::result_ext::ResultExt;
+use crate::utils::{ImageContainer, ImageProperties, ImageInfo};
 use crate::{
     main_window::{MainWindow, Page},
     utils::{self, ImagePropertiesFile},
@@ -33,7 +34,7 @@ use fltk::{
 };
 use std::{
     fs,
-    path::{Path, PathBuf},
+    path::{Path},
     sync::{mpsc, Arc, RwLock},
 };
 
@@ -85,7 +86,7 @@ pub(crate) fn spawn_image_thread(
     let mut status = main_win.status.clone();
     let mut count = main_win.count.clone();
     let mut dimension = main_win.dimension.clone();
-    let images_path = Arc::clone(&main_win.images_path);
+    let images_path = Arc::clone(&main_win.images_list);
 
     let mut _container: Option<ImageContainer> = None;
     std::thread::spawn(move || loop {
@@ -179,13 +180,13 @@ pub(crate) fn spawn_image_thread(
                     if let Some(cont) = &mut _container {
                         status.set_label("Cloning...");
                         win.deactivate();
-                        if let Some(path) = cont.clone_img() {
+                        if let Some(image_info) = cont.clone_img() {
                             let idx = file_choice.value();
                             let mut imgs = images_path.write().unwrap();
-                            imgs.insert(idx as usize, path.clone());
+                            imgs.insert(idx as usize, image_info.clone());
                             file_choice.insert(
                                 idx,
-                                path.file_name().unwrap().to_str().unwrap(),
+                                image_info.path.file_name().unwrap().to_str().unwrap(),
                                 enums::Shortcut::None,
                                 menu::MenuFlag::Normal,
                                 |a| a.do_callback(),
@@ -225,7 +226,7 @@ pub(crate) fn spawn_image_thread(
 /// Loads the selected image in file_choice to ImageContainer to edit
 fn load_image(
     file_choice: &mut menu::Choice,
-    images_path: Arc<RwLock<Vec<PathBuf>>>,
+    images_list: Arc<RwLock<Vec<ImageInfo>>>,
     crop: Option<(f64, f64)>,
     quote: &mut MultilineInput,
     subquote: &mut MultilineInput,
@@ -251,19 +252,19 @@ fn load_image(
     properties: Arc<RwLock<ImageProperties>>,
     container: &mut Option<ImageContainer>,
 ) {
-    let imgs = images_path.read().unwrap();
+    let imgs = images_list.read().unwrap();
     if imgs.len() == 0 {
         *container = None;
         flush_buffer(app_sender, container);
         return;
     }
     count.set_label(&format!("[{}/{}]", file_choice.value() + 1, imgs.len()));
-    let file = imgs.get(file_choice.value() as usize).unwrap();
+    let image_info = imgs.get(file_choice.value() as usize).unwrap();
 
-    *container = Some(ImageContainer::new(&file, Arc::clone(&properties)));
+    *container = Some(ImageContainer::new(&image_info, Arc::clone(&properties)));
 
     if let Some(cont) = container {
-        let file = Path::new(&file);
+        let file = Path::new(&image_info.path);
         let properties_file = file.with_extension("prop");
 
         let read = fs::read_to_string(&properties_file).unwrap_or("{}".to_owned());
@@ -273,10 +274,7 @@ fn load_image(
                 warn!("Config is corrupt\n{:?}", e);
                 match dialog::choice_default("Config is corrupt, fix??", "yes", "no", "") {
                     1 => {
-                        if let Err(e) = fs::remove_file(&properties_file) {
-                            dialog::alert_default("Failed to delete image properties file!");
-                            warn!("Failed to delete image properties file!\n{:?}", e);
-                        }
+                        fs::remove_file(&properties_file).warn_log("Failed to delete image properties file!");
                         ImagePropertiesFile::default()
                     }
                     _ => return,

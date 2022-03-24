@@ -26,6 +26,7 @@ mod draw_thread;
 mod globals;
 mod main_window;
 mod utils;
+mod result_ext;
 
 use fltk::{
     app::{channel, App},

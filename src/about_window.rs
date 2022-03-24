@@ -13,11 +13,10 @@
 */
 
 //! About Window
-use crate::{config, globals};
+use crate::{config, globals, result_ext::ResultExt};
 use fltk::{
     app,
     button::Button,
-    dialog,
     enums::{self, Align, Event},
     frame::Frame,
     group::Flex,
@@ -152,10 +151,7 @@ impl About {
         // Repository Link
         self.repo_link.handle(|_, ev| {
             if ev == Event::Push {
-                if let Err(e) = webbrowser::open(env!("CARGO_PKG_REPOSITORY")) {
-                    dialog::alert_default("Failed to open the link!");
-                    warn!("Failed to open the link!\n{:?}", e);
-                }
+                webbrowser::open(env!("CARGO_PKG_REPOSITORY")).warn_log("Failed to open the link!");
             }
             true
         });
@@ -163,10 +159,7 @@ impl About {
         // Developer's Link
         self.dev_link.handle(|_, ev| {
             if ev == Event::Push {
-                if let Err(e) = webbrowser::open("https://piyushxcoder.in") {
-                    dialog::alert_default("Failed to open the link!");
-                    warn!("Failed to open the link!\n{:?}", e);
-                }
+                webbrowser::open("https://piyushxcoder.in").warn_log("Failed to open the link!");
             }
             true
         });
@@ -174,10 +167,7 @@ impl About {
         // License Link
         self.license_link.handle(|_, ev| {
             if ev == Event::Push {
-                if let Err(e) = webbrowser::open("https://www.gnu.org/licenses/gpl-3.0.html") {
-                    dialog::alert_default("Failed to open the link!");
-                    warn!("Failed to open the link!\n{:?}", e);
-                }
+                webbrowser::open("https://www.gnu.org/licenses/gpl-3.0.html").warn_log("Failed to open the link!");
             }
             true
         });

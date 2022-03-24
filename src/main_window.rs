@@ -16,7 +16,10 @@
 use crate::about_window::About;
 use crate::crop_window::CropWindow;
 use crate::draw_thread::*;
+use crate::result_ext::ResultExt;
 use crate::utils;
+use crate::utils::ImageInfo;
+use crate::utils::ImageType;
 use crate::utils::ImageProperties;
 use crate::{config_window::ConfigWindow, globals};
 use fltk::{
@@ -38,7 +41,7 @@ use fltk::{
 };
 use std::path::PathBuf;
 use std::sync::{mpsc, RwLock};
-use std::{ffi::OsStr, fs, sync::Arc};
+use std::{ fs, sync::Arc};
 
 pub(crate) struct MainWindow {
     pub(crate) win: Window,
@@ -81,7 +84,7 @@ pub(crate) struct MainWindow {
     pub(crate) count: Frame,
     pub(crate) dimension: Frame,
     pub(crate) page: Page,
-    pub(crate) images_path: Arc<RwLock<Vec<PathBuf>>>,
+    pub(crate) images_list: Arc<RwLock<Vec<ImageInfo>>>,
     pub(crate) draw_buff: Arc<RwLock<Option<Vec<u8>>>>,
     pub(crate) properties: Arc<RwLock<ImageProperties>>,
     pub(crate) sender: mpsc::Sender<DrawMessage>,
@@ -380,7 +383,7 @@ impl MainWindow {
             status,
             count,
             dimension,
-            images_path: Arc::new(RwLock::new(vec![])),
+            images_list: Arc::new(RwLock::new(vec![])),
             draw_buff,
             properties: Arc::clone(&properties),
             page: Page {
@@ -401,7 +404,7 @@ impl MainWindow {
     fn menu(&mut self) {
         let mut file_choice = self.file_choice.clone();
         let sender = self.sender.clone();
-        let imgs = Arc::clone(&self.images_path);
+        let imgs = Arc::clone(&self.images_list);
         self.menubar.add(
             "&File/Open Folder...\t",
             Shortcut::Ctrl | 'o',
@@ -418,8 +421,7 @@ impl MainWindow {
                 let expost_dir = path.join("export");
                 if !expost_dir.exists() {
                     if let Err(e) = fs::create_dir(expost_dir) {
-                        fltk::dialog::alert_default("Failed to create export folder!");
-                        warn!("Failed to create export folder!\n{:?}", e);
+                        Result::<(), _>::Err(e).warn_log("Failed to create export folder!");
                         return;
                     }
                 }
@@ -492,10 +494,10 @@ impl MainWindow {
         // Resest Button for FileChoice
         let mut file_choice = self.file_choice.clone();
         let sender = self.sender.clone();
-        let imgs = Arc::clone(&self.images_path);
+        let imgs = Arc::clone(&self.images_list);
         self.reset_file_choice.set_callback(move |_| {
             let path = match imgs.read().unwrap().first() {
-                Some(path) => path.parent().unwrap().to_path_buf(),
+                Some(image_info) => image_info.path.parent().unwrap().to_path_buf(),
                 None => return,
             };
             load_dir(&path, Arc::clone(&imgs), &mut file_choice, &sender);
@@ -662,8 +664,8 @@ impl MainWindow {
         let sender = self.sender.clone();
         self.crop_btn.set_callback(move |_| {
             let mut prop = properties.write().unwrap();
-            if let Some(path) = &prop.path {
-                if let Some((x, y)) = crop_win.load_to_crop(path, prop.crop_position) {
+            if let Some(image_info) = &prop.image_info {
+                if let Some((x, y)) = crop_win.load_to_crop(&image_info, prop.crop_position) {
                     sender.send(DrawMessage::ChangeCrop((x, y))).unwrap();
                     prop.is_saved = false;
                 }
@@ -1004,7 +1006,7 @@ impl MainWindow {
 /// Load all iamges in a directory
 fn load_dir(
     path: &PathBuf,
-    imgs: Arc<RwLock<Vec<PathBuf>>>,
+    imgs: Arc<RwLock<Vec<ImageInfo>>>,
     file_choice: &mut menu::Choice,
     sender: &mpsc::Sender<DrawMessage>,
 ) {
@@ -1018,11 +1020,15 @@ fn load_dir(
     *imgs_b = vec![];
     for file in files {
         let path = file.path();
-        if path.extension() == Some(OsStr::new("jpg"))
-            || path.extension() == Some(OsStr::new("png"))
-        {
-            text = format!("{}|{}", text, path.file_name().unwrap().to_str().unwrap());
-            imgs_b.push(path);
+        if let Ok(Some(ty)) = infer::get_from_path(&path) {
+            let mime = ty.mime_type();
+            match ImageType::from_mime(mime) {
+                ImageType::None => (),
+                _ => {
+                    text = format!("{}|{}", text, path.file_name().unwrap().to_str().unwrap());
+                    imgs_b.push(ImageInfo { path, image_type: ImageType::from_mime(mime) });
+                }
+            }
         }
     }
     if text.len() == 0 {

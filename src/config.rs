@@ -13,7 +13,7 @@
 */
 
 //! load, save configuration and parse cli args
-use crate::{config_picker::ConfigPicker, globals};
+use crate::{config_picker::ConfigPicker, globals, result_ext::ResultExt, utils::ImageType};
 use clap::{ArgEnum, Parser};
 use fltk::dialog;
 use fltk_theme::ThemeType;
@@ -128,7 +128,7 @@ pub(crate) struct ConfigFile {
     pub(crate) tag2_position_ratio: f64,
     pub(crate) image_ratio: (f64, f64),
     pub(crate) color_layer: [u8; 4],
-    pub(crate) image_format: String,
+    pub(crate) image_format: ImageType,
 }
 
 impl Default for ConfigFile {
@@ -151,7 +151,7 @@ impl Default for ConfigFile {
             tag2_position_ratio: 0.95,
             image_ratio: (4.0, 5.0),
             color_layer: [20, 22, 25, 197],
-            image_format: "png".to_owned(),
+            image_format: ImageType::Png,
         }
     }
 }
@@ -207,28 +207,10 @@ pub(crate) fn get_configs() -> Option<HashMap<String, ConfigFile>> {
 
 /// Save configs
 pub(crate) fn save_configs(configs: HashMap<String, ConfigFile>) {
-    if let Err(e) = std::fs::write(&*CONFIG_FILE, serde_json::to_string(&configs).unwrap()) {
-        dialog::alert_default("Can't write config!");
-        error!("Can't write config!\n{:?}", e);
-        panic!("Can't write config!\n{:?}", e);
-    }
+    std::fs::write(&*CONFIG_FILE, serde_json::to_string(&configs).unwrap()).expect_log("Can't write config!");
 }
 
 pub(crate) fn log_file() -> File {
-    // match File::open(&*LOG_FILE) {
-    //     Ok(mut file) => {
-    //         if is_file_30_days_old(&file) {
-    //             match File::create(&*LOG_FILE) {
-    //                 Ok(f) => file = f,
-    //                 Err(e) => {
-    //                     dialog::alert_default("Can't open log file!");
-    //                     panic!("{:?}", e);
-    //                 }
-    //             }
-    //         }
-    //         file
-    //     }
-    //     Err(_) =>
     match File::create(&*LOG_FILE) {
         Ok(f) => f,
         Err(e) => {
@@ -236,18 +218,4 @@ pub(crate) fn log_file() -> File {
             panic!("{:?}", e);
         }
     }
-    // }
 }
-
-// pub(crate) fn is_file_30_days_old(file: &File) -> bool {
-//     if let Ok(meta) = file.metadata() {
-//         if let Ok(time) = meta.created() {
-//             if let Ok(dur) = SystemTime::now().duration_since(time) {
-//                 if dur > Duration::from_secs(60 * 60 * 24 * 30) {
-//                     return true;
-//                 }
-//             }
-//         }
-//     }
-//     false
-// }

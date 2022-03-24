@@ -33,7 +33,7 @@ use fltk::{
 
 use crate::{
     config::{self, ConfigFile},
-    globals, utils,
+    globals, utils::{self, ImageType},
 };
 
 pub(crate) struct ConfigWindow {
@@ -505,12 +505,12 @@ impl ConfigWindow {
         self.translucent_layer_alpha
             .set_value(config.color_layer[3] as f64);
 
-        match config.image_format.as_str() {
-            "png" => {
+        match config.image_format {
+            utils::ImageType::Png => {
                 self.png_format.set_value(true);
                 self.jpeg_format.set_value(false)
             }
-            "jpg" => {
+            utils::ImageType::Jpeg => {
                 self.png_format.set_value(false);
                 self.jpeg_format.set_value(true)
             }
@@ -1063,7 +1063,7 @@ impl ConfigWindow {
                 .borrow_mut()
                 .get_mut(&browse.selected_text().unwrap())
             {
-                conf.image_format = "png".to_owned();
+                conf.image_format = ImageType::Png;
             }
         });
 
@@ -1075,7 +1075,7 @@ impl ConfigWindow {
                 .borrow_mut()
                 .get_mut(&browse.selected_text().unwrap())
             {
-                conf.image_format = "jpg".to_owned();
+                conf.image_format = ImageType::Jpeg;
             }
         });
 

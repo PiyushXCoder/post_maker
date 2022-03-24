@@ -15,7 +15,7 @@
 //! Window to change Crop properties of image
 use crate::{
     globals,
-    utils::{self, Coord, ImageContainer, ImageProperties},
+    utils::{self, Coord, ImageContainer, ImageProperties, ImageInfo},
 };
 use fltk::{
     app, button::Button, draw, enums::Event, frame::Frame, group::Flex, image::SvgImage,
@@ -24,7 +24,6 @@ use fltk::{
 use image::GenericImageView;
 use std::{
     cell::RefCell,
-    path::PathBuf,
     rc::Rc,
     sync::{Arc, RwLock},
 };
@@ -108,7 +107,7 @@ impl CropWindow {
     /// Call it to show window to crop image
     pub(crate) fn load_to_crop(
         &mut self,
-        path: &PathBuf,
+        path: &ImageInfo,
         crop_pos: Option<(f64, f64)>,
     ) -> Option<(f64, f64)> {
         let mut container =
