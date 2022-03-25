@@ -39,6 +39,7 @@ use fltk::{
     valuator::{Slider, SliderType},
     window::Window,
 };
+use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::sync::{mpsc, RwLock};
 use std::{ fs, sync::Arc};
@@ -405,6 +406,7 @@ impl MainWindow {
         let mut file_choice = self.file_choice.clone();
         let sender = self.sender.clone();
         let imgs = Arc::clone(&self.images_list);
+        let mut win = self.win.clone();
         self.menubar.add(
             "&File/Open Folder...\t",
             Shortcut::Ctrl | 'o',
@@ -425,6 +427,7 @@ impl MainWindow {
                         return;
                     }
                 }
+                win.set_label(&format!("{} - Post Maker", path.file_name().unwrap_or(OsStr::new("Unknown")).to_string_lossy()));
                 load_dir(&path, Arc::clone(&imgs), &mut file_choice, &sender);
             },
         );
