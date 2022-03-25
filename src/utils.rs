@@ -64,6 +64,13 @@ impl Into<(i32, i32)> for Coord {
     }
 }
 
+
+impl Into<(usize, usize)> for Coord {
+    fn into(self) -> (usize, usize) {
+        (self.0 as usize, self.1 as usize)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct ImageInfo {
     pub(crate) path: PathBuf,
@@ -217,14 +224,10 @@ impl ImageContainer {
         };
         let config = globals::CONFIG.read().unwrap();
         let export_format = &config.image_format;
-        let export = path_original.parent().unwrap().join("export").join(
-            path_original
-                .with_extension(export_format.as_extension())
-                .file_name()
-                .unwrap()
-                .to_str()
-                .unwrap(),
-        );
+        let mut export = path_original.parent().unwrap().join("export")
+            .join(format!("{}-{}", path_original.file_stem().unwrap_or_default().to_string_lossy(), 
+            path_original.extension().unwrap_or_default().to_string_lossy()));
+        export.set_extension(export_format.as_extension());
 
         let mut prop = prop.clone();
         prop.image_info = None;
@@ -276,11 +279,25 @@ impl ImageContainer {
                 encoder.write_image(&img.into_rgba8(), w, h, image::ColorType::Rgba8).warn_log("Failed to export Image!");
             }
             ImageType::Jpeg => {
-                let mut encoder =
-                    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut output, 100);
-                encoder.set_pixel_density(image::codecs::jpeg::PixelDensity::dpi(300));
+                let (width, height) = Coord::from(img.dimensions()).into();
+                let buf = img.into_rgb8();
+                
+                let mut comp = mozjpeg::Compress::new(mozjpeg::ColorSpace::JCS_RGB);
 
-                encoder.encode_image(&img).warn_log("Failed to export Image!");
+                comp.set_size(width, height);
+                comp.set_quality(100.0);
+                comp.set_smoothing_factor(1);
+                comp.set_mem_dest();
+                comp.start_compress();
+
+                comp.write_scanlines(&buf);
+
+                comp.finish_compress();
+
+                match comp.data_to_vec() {
+                    Ok(data) => std::fs::write(&export, data).warn_log("Failed to export Image!"),
+                    Err(e) => Result::<(), _>::Err(e).warn_log("Failed to encode image!")
+                }
             }
             _ => (),
         }
@@ -479,13 +496,21 @@ fn load_image(image_info: &ImageInfo) -> DynamicImage {
         ImageType::Webp => {
             let mut f = File::open(&image_info.path).expect_log("Failed to open image!");
             let mut buf = vec![];
-            f.read_to_end(&mut buf).unwrap();
-            let a = webp::Decoder::new(&buf).decode().unwrap();
+            f.read_to_end(&mut buf).expect_log("Failed to read image!");
+            let a = webp::Decoder::new(&buf).decode().ok_or("").expect_log("Failed to decode image!");
             a.to_image()
         }
         ImageType::Jpeg => {
-            let dec = image::codecs::jpeg::JpegDecoder::new(File::open(&image_info.path).expect_log("Failed to open image!")).expect_log("Failed to decode image!");
-            DynamicImage::from_decoder(dec).expect_log("Failed to open image!")
+            let mut f = File::open(&image_info.path).expect_log("Failed to open image!");
+            let mut buf = vec![];
+            f.read_to_end(&mut buf).expect_log("Failed to read image!");
+
+            let d = mozjpeg::Decompress::with_markers(mozjpeg::ALL_MARKERS).from_mem(&buf)
+                        .expect_log("Failed to decompress image!");
+            let mut image = d.rgb().expect_log("Failed to covert to rgb image!");
+            let pixels = image.read_scanlines_flat().unwrap();
+            let image = ImageBuffer::from_raw(image.width() as u32, image.height() as u32, pixels).unwrap();
+            DynamicImage::ImageRgb8(image)
         }
         ImageType::Png => {
             let dec = image::codecs::png::PngDecoder::new(File::open(&image_info.path).expect_log("Failed to open image!")).expect_log("Failed to decode image!");
