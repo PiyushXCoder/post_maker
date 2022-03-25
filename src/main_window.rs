@@ -432,13 +432,23 @@ impl MainWindow {
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
         self.menubar.add(
-            "&File/Save...\t",
+            "&File/Save Image...\t",
             Shortcut::Ctrl | 's',
             menu::MenuFlag::Normal,
             move |_| {
                 let mut prop = properties.write().unwrap();
                 prop.is_saved = true;
                 sender.send(DrawMessage::Save).unwrap();
+            },
+        );
+
+        let sender = self.sender.clone();
+        self.menubar.add(
+            "&Actions/Show Details...\t",
+            Shortcut::None,
+            menu::MenuFlag::Normal,
+            move |_| {
+                sender.send(DrawMessage::ShowImagesDetails).unwrap();
             },
         );
 

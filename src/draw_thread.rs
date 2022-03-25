@@ -34,7 +34,6 @@ use fltk::{
 };
 use std::{
     fs,
-    path::{Path},
     sync::{mpsc, Arc, RwLock},
 };
 
@@ -54,6 +53,8 @@ pub(crate) enum DrawMessage {
     Clone,
     /// Delete file
     Delete,
+    /// Show details about images linke count of quotes
+    ShowImagesDetails
 }
 
 /// Spawn thread to manage all actions related to image, like: edit, save, delete
@@ -86,7 +87,7 @@ pub(crate) fn spawn_image_thread(
     let mut status = main_win.status.clone();
     let mut count = main_win.count.clone();
     let mut dimension = main_win.dimension.clone();
-    let images_path = Arc::clone(&main_win.images_list);
+    let images_list = Arc::clone(&main_win.images_list);
 
     let mut _container: Option<ImageContainer> = None;
     std::thread::spawn(move || loop {
@@ -96,7 +97,7 @@ pub(crate) fn spawn_image_thread(
                     status.set_label("Loading...");
                     load_image(
                         &mut file_choice,
-                        Arc::clone(&images_path),
+                        Arc::clone(&images_list),
                         None,
                         &mut quote,
                         &mut subquote,
@@ -129,7 +130,7 @@ pub(crate) fn spawn_image_thread(
                     status.set_label("Loading...");
                     load_image(
                         &mut file_choice,
-                        Arc::clone(&images_path),
+                        Arc::clone(&images_list),
                         Some((x, y)),
                         &mut quote,
                         &mut subquote,
@@ -182,7 +183,7 @@ pub(crate) fn spawn_image_thread(
                         win.deactivate();
                         if let Some(image_info) = cont.clone_img() {
                             let idx = file_choice.value();
-                            let mut imgs = images_path.write().unwrap();
+                            let mut imgs = images_list.write().unwrap();
                             imgs.insert(idx as usize, image_info.clone());
                             file_choice.insert(
                                 idx,
@@ -204,7 +205,7 @@ pub(crate) fn spawn_image_thread(
                         status.set_label("Deleting...");
                         win.deactivate();
                         cont.delete();
-                        let mut imgs = images_path.write().unwrap();
+                        let mut imgs = images_list.write().unwrap();
                         imgs.remove(file_choice.value() as usize);
                         file_choice.remove(file_choice.value());
                         if file_choice.value() != imgs.len() as i32 {
@@ -217,6 +218,9 @@ pub(crate) fn spawn_image_thread(
                         win.redraw();
                         app::awake();
                     }
+                }
+                DrawMessage::ShowImagesDetails => {
+                    show_images_details(Arc::clone(&images_list))
                 }
             }
         }
@@ -264,8 +268,7 @@ fn load_image(
     *container = Some(ImageContainer::new(&image_info, Arc::clone(&properties)));
 
     if let Some(cont) = container {
-        let file = Path::new(&image_info.path);
-        let properties_file = file.with_extension("prop");
+        let properties_file = utils::get_properties_file(&image_info);
 
         let read = fs::read_to_string(&properties_file).unwrap_or("{}".to_owned());
         let read = match serde_json::from_str::<ImagePropertiesFile>(&read) {
@@ -344,6 +347,37 @@ fn load_image(
         cont.redraw_to_buffer();
     }
     flush_buffer(&app_sender, &container);
+}
+
+fn show_images_details(images_list: Arc<RwLock<Vec<ImageInfo>>>) {
+    let mut image_with_quote: usize = 0;
+    let mut image_without_quote: usize = 0;
+
+    let list = images_list.read().unwrap();
+    for image_info in list.iter() {
+        let properties_file = utils::get_properties_file(&image_info);
+
+        let read = fs::read_to_string(&properties_file).unwrap_or("{}".to_owned());
+        let read = match serde_json::from_str::<ImagePropertiesFile>(&read) {
+            Ok(r) => r,
+            Err(_) => {
+                image_without_quote += 1;
+                continue;
+            }
+        };
+
+        if let Some(t) = read.quote {
+            if t.trim().len() == 0 {
+                image_without_quote += 1;
+            } else {
+                image_with_quote += 1;
+            }
+        }else {
+            image_without_quote += 1;
+        }
+    }
+
+    dialog::message_default(&format!("With Quote: {}\nWithout Quote: {}", image_with_quote, image_without_quote));
 }
 
 /// Flush the Buffer from image container to drawing buffer for fltk

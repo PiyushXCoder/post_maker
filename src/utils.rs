@@ -210,12 +210,11 @@ impl ImageContainer {
     /// Save image and properities
     pub(crate) fn save(&self) {
         let prop = self.properties.read().unwrap();
-
-        let (path_original, mut original_image) = match &prop.image_info {
-            Some(p) => (Path::new(&p.path), load_image(p)),
+        let image_info = &prop.image_info;
+        let (path_original, path_properties, mut original_image) = match image_info {
+            Some(p) => (Path::new(&p.path), get_properties_file(p), load_image(p)),
             None => return,
         };
-        let path_properties = path_original.with_extension("prop");
         let config = globals::CONFIG.read().unwrap();
         let export_format = &config.image_format;
         let export = path_original.parent().unwrap().join("export").join(
@@ -292,30 +291,27 @@ impl ImageContainer {
 
         match &prop.image_info {
             Some(image_info) => {
-                let name = image_info.path.file_stem().unwrap().to_string_lossy();
-                let ext = image_info.path.extension().unwrap().to_string_lossy();
+                let stem = image_info.path.file_stem().unwrap().to_string_lossy();
+                let extension = image_info.path.extension().unwrap().to_string_lossy();
                 let mut i = 1;
-                let mut new_path = image_info.path.clone();
-                while new_path.exists() {
-                    let new_file = format!("{}{}.{}", name, "-copy".repeat(i), ext);
-                    new_path = image_info.path.with_file_name(&new_file);
+                let mut new_image_info = image_info.clone();
+                while new_image_info.path.exists() {
+                    let new_file = format!("{}{}.{}", stem, "-copy".repeat(i), extension);
+                    new_image_info.path = image_info.path.with_file_name(&new_file);
                     i += 1;
                 }
 
-                let path_properties = image_info.path.with_extension("prop");
-                let path_properties_new = new_path.with_extension("prop");
+                let path_properties = get_properties_file(&image_info);
+                let path_properties_new = get_properties_file(&new_image_info);
 
                 if image_info.path.exists() {
-                    fs::copy(&image_info.path, &new_path).warn_log("Failed to clone image!");
+                    fs::copy(&image_info.path, &new_image_info.path).warn_log("Failed to clone image!");
                 }
 
                 if path_properties.exists() {
                     fs::copy(path_properties, &path_properties_new).warn_log("Failed to clone image properties!");
                 }
-                Some(ImageInfo {
-                    path: new_path,
-                    image_type: image_info.image_type.clone()
-                })
+                Some(new_image_info)
             }
             None => None,
         }
@@ -326,13 +322,13 @@ impl ImageContainer {
         let config = globals::CONFIG.read().unwrap();
         let export_format = config.image_format.as_extension();
 
-        let path_original = match &prop.image_info {
-            Some(p) => Path::new(&p.path),
+        let image_info = &prop.image_info;
+        let (path_image, path_properties) = match image_info {
+            Some(p) => (Path::new(&p.path), get_properties_file(p)),
             None => return,
         };
-        let path_properties = path_original.with_extension("prop");
-        let export = path_original.parent().unwrap().join("export").join(
-            path_original
+        let export = path_image.parent().unwrap().join("export").join(
+            path_image
                 .with_extension(export_format)
                 .file_name()
                 .unwrap()
@@ -340,8 +336,8 @@ impl ImageContainer {
                 .unwrap(),
         );
 
-        if path_original.exists() {
-            fs::remove_file(path_original).warn_log("Failed to delete image!");
+        if path_image.exists() {
+            fs::remove_file(path_image).warn_log("Failed to delete image!");
         }
 
         if path_properties.exists() {
@@ -628,6 +624,34 @@ pub(crate) fn measure_line(
 
     Coord::from((width, height)).into()
 }
+
+/// path of properties files
+pub(crate) fn get_properties_file(image_info: &ImageInfo) -> PathBuf {
+    let img = &image_info.path;
+    let stem = String::from(img.file_stem().unwrap_or_default().to_string_lossy());
+    let extension = String::from(img.extension().unwrap_or_default().to_string_lossy());
+
+    let mut default_path = img.with_file_name(format!("{}-{}", stem, extension));
+    default_path.set_extension("prop");
+
+    if default_path.exists() {
+        return default_path;
+    }
+
+    let path = img.with_extension("prop");
+
+    if path.exists() {
+        match std::fs::copy(&path, &default_path){
+            Ok(_) => {
+                std::fs::remove_file(&path).warn_log("Failed to delete depricated prop file")
+            }
+            Err(e) => Result::<(), _>::Err(e).warn_log("Failed to copy depricated prop file")
+        }
+    } 
+
+    default_path
+}
+
 
 /// small hack because 0,0,0 rgb, because can't be set on fltk theme
 pub(crate) fn set_color_btn_rgba(rgba: [u8; 4], btn: &mut Button) {
