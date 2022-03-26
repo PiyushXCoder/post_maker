@@ -877,7 +877,7 @@ dependencies = [
 
 [[package]]
 name = "post_maker"
-version = "0.4.0-alpha.2"
+version = "0.4.0-alpha.3"
 dependencies = [
  "clap",
  "dirs",
