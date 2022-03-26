@@ -154,8 +154,8 @@ impl ImageContainer {
         let (origina_crop_width, origina_crop_height) =
             croped_ratio(original_width, original_height);
 
-        if origina_crop_width < 700.0 {
-            show_alert("Image width is below 600px");
+        if origina_crop_width < globals::CONFIG.read().unwrap().minimum_width_limit {
+            show_alert("Image width is below limit");
         }
 
         prop.crop_position = Some((
@@ -182,6 +182,11 @@ impl ImageContainer {
 
         let (s_width, s_height): (f64, f64) = Coord::from(self.image.dimensions()).into();
         let (c_width, c_height) = croped_ratio(s_width, s_height);
+
+        if c_width < globals::CONFIG.read().unwrap().minimum_width_limit {
+            show_alert("Image width is below limit");
+        }
+
         let (cx, cy) = (
             (original_x * s_width) / original_width,
             (original_y * s_height) / original_height,
@@ -244,9 +249,9 @@ impl ImageContainer {
             crop_height as u32,
         );
 
-        if crop_width > 1080.0 {
-            let (resize_width,resize_height) = (1080.0, height_from_width(1080.0));
-            img = original_image.resize_exact(resize_width as u32,resize_height as u32, image::imageops::FilterType::Lanczos3);
+        if crop_width > config.maximum_width_limit {
+            let (resize_width,resize_height) = (config.maximum_width_limit, height_from_width(config.maximum_width_limit));
+            img = img.resize_exact(resize_width as u32,resize_height as u32, image::imageops::FilterType::Lanczos3);
         }
 
         draw_layer_and_text(

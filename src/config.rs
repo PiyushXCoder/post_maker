@@ -128,6 +128,8 @@ pub(crate) struct ConfigFile {
     pub(crate) tag2_position_ratio: f64,
     pub(crate) image_ratio: (f64, f64),
     pub(crate) color_layer: [u8; 4],
+    pub(crate) minimum_width_limit: f64, // for export of image
+    pub(crate) maximum_width_limit: f64, // for export of image
     pub(crate) image_format: ImageType,
 }
 
@@ -151,6 +153,8 @@ impl Default for ConfigFile {
             tag2_position_ratio: 0.95,
             image_ratio: (4.0, 5.0),
             color_layer: [20, 22, 25, 197],
+            minimum_width_limit: 650.0,
+            maximum_width_limit: 1080.0,
             image_format: ImageType::Png,
         }
     }

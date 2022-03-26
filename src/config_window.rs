@@ -64,6 +64,8 @@ pub(crate) struct ConfigWindow {
     pub(crate) tag2_position_ratio: ValueInput,
     pub(crate) image_ratio_width: ValueInput,
     pub(crate) image_ratio_height: ValueInput,
+    pub(crate) minimum_width_limit: ValueInput,
+    pub(crate) maximum_width_limit: ValueInput,
     /// RGB value of top translucent layer
     pub(crate) translucent_layer_rgb: Button,
     /// opacity value of top translucent layer
@@ -130,7 +132,7 @@ impl ConfigWindow {
             .with_pos(205, 5);
 
         let mut col = Flex::default()
-            .with_size(scroll.width() - 35, 700)
+            .with_size(scroll.width() - 35, 850)
             .column()
             .with_pos(100, 0);
 
@@ -375,6 +377,55 @@ impl ConfigWindow {
         image_ratio_grp.end();
         col.set_size(&image_ratio_grp, 30);
 
+
+
+
+
+        let mut label = Frame::default().with_label("Image with limits:");
+        label.set_label_font(enums::Font::HelveticaBold);
+        col.set_size(&label, 15);
+        let mut hint =
+            Frame::default().with_label("Limiting width of image in pixels");
+        hint.set_label_font(Font::CourierItalic);
+        hint.set_label_size(12);
+        col.set_size(&hint, 20);
+
+        // Size Ratio Group
+        let row_grp = Flex::default().row();
+        // column 1
+        let mut col_grp = Flex::default().column();
+        let mut minimum_width_limit_grp = Flex::default().row();
+        minimum_width_limit_grp.set_size(
+            &Frame::default()
+                .with_label("Minimum")
+                .with_align(Align::Right | Align::Inside),
+            130,
+        );
+        let minimum_width_limit = ValueInput::default();
+        minimum_width_limit_grp.end();
+        col_grp.set_size(&minimum_width_limit_grp, 30);
+        col_grp.end();
+
+        // column 2
+        let mut col_grp = Flex::default().column();
+        let mut maximum_width_limit_grp = Flex::default().row();
+        maximum_width_limit_grp.set_size(
+            &Frame::default()
+                .with_label("Maximim")
+                .with_align(Align::Right | Align::Inside),
+            130,
+        );
+        let maximum_width_limit = ValueInput::default();
+        maximum_width_limit_grp.end();
+        col_grp.set_size(&maximum_width_limit_grp, 30);
+        col_grp.end();
+        row_grp.end();
+        col.set_size(&row_grp, 40);
+
+
+
+
+
         let mut label = Frame::default().with_label("Colour for dark layer:");
         label.set_label_font(enums::Font::HelveticaBold);
         col.set_size(&label, 15);
@@ -450,6 +501,8 @@ impl ConfigWindow {
             tag2_position_ratio,
             image_ratio_width,
             image_ratio_height,
+            minimum_width_limit,
+            maximum_width_limit,
             translucent_layer_rgb,
             translucent_layer_alpha,
             png_format,
@@ -501,6 +554,8 @@ impl ConfigWindow {
             .set_value(config.tag2_position_ratio);
         self.image_ratio_width.set_value(config.image_ratio.0);
         self.image_ratio_height.set_value(config.image_ratio.1);
+        self.minimum_width_limit.set_value(config.minimum_width_limit);
+        self.maximum_width_limit.set_value(config.maximum_width_limit);
         utils::set_color_btn_rgba(config.color_layer, &mut self.translucent_layer_rgb);
         self.translucent_layer_alpha
             .set_value(config.color_layer[3] as f64);
@@ -546,6 +601,8 @@ impl ConfigWindow {
         let mut tag2_position_ratio = self.tag2_position_ratio.clone();
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
+        let mut minimum_width_limit = self.minimum_width_limit.clone();
+        let mut maximum_width_limit = self.maximum_width_limit.clone();
         let mut layer_rgb = self.translucent_layer_rgb.clone();
         let mut layer_alpha = self.translucent_layer_alpha.clone();
         let mut browse = self.browse.clone();
@@ -589,6 +646,8 @@ impl ConfigWindow {
             tag2_position_ratio.set_value(conf.tag2_position_ratio);
             image_ratio_width.set_value(conf.image_ratio.0);
             image_ratio_height.set_value(conf.image_ratio.1);
+            minimum_width_limit.set_value(conf.minimum_width_limit);
+            maximum_width_limit.set_value(conf.maximum_width_limit);
             utils::set_color_btn_rgba(conf.color_layer, &mut layer_rgb);
             layer_alpha.set_value(conf.color_layer[3] as f64);
             browse.add(&name);
@@ -616,6 +675,8 @@ impl ConfigWindow {
         let mut tag2_position_ratio = self.tag2_position_ratio.clone();
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
+        let mut minimum_width_limit = self.minimum_width_limit.clone();
+        let mut maximum_width_limit = self.maximum_width_limit.clone();
         let mut layer_rgb = self.translucent_layer_rgb.clone();
         let mut layer_alpha = self.translucent_layer_alpha.clone();
         let mut browse = self.browse.clone();
@@ -658,6 +719,8 @@ impl ConfigWindow {
                 tag2_position_ratio.set_value(conf.tag2_position_ratio);
                 image_ratio_width.set_value(conf.image_ratio.0);
                 image_ratio_height.set_value(conf.image_ratio.1);
+                minimum_width_limit.set_value(conf.minimum_width_limit);
+                maximum_width_limit.set_value(conf.maximum_width_limit);
                 utils::set_color_btn_rgba(conf.color_layer, &mut layer_rgb);
                 layer_alpha.set_value(conf.color_layer[3] as f64);
                 layer_rgb.redraw();
@@ -682,6 +745,8 @@ impl ConfigWindow {
         let mut tag2_position_ratio = self.tag2_position_ratio.clone();
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
+        let mut minimum_width_limit = self.minimum_width_limit.clone();
+        let mut maximum_width_limit = self.maximum_width_limit.clone();
         let mut layer_rgb = self.translucent_layer_rgb.clone();
         let mut layer_alpha = self.translucent_layer_alpha.clone();
         let configs = Rc::clone(&self.configs);
@@ -714,6 +779,8 @@ impl ConfigWindow {
                 tag2_position_ratio.set_value(conf.tag2_position_ratio);
                 image_ratio_width.set_value(conf.image_ratio.0);
                 image_ratio_height.set_value(conf.image_ratio.1);
+                minimum_width_limit.set_value(conf.minimum_width_limit);
+                maximum_width_limit.set_value(conf.maximum_width_limit);
                 utils::set_color_btn_rgba(conf.color_layer, &mut layer_rgb);
                 layer_alpha.set_value(conf.color_layer[3] as f64);
                 layer_rgb.redraw();
@@ -1011,6 +1078,36 @@ impl ConfigWindow {
             true
         });
 
+        // Minimum Width Limit
+        let browse = self.browse.clone();
+        let configs = Rc::clone(&self.configs);
+        self.minimum_width_limit.handle(move |f, ev| {
+            if ev == Event::KeyUp {
+                if let Some(conf) = configs
+                    .borrow_mut()
+                    .get_mut(&browse.selected_text().unwrap())
+                {
+                    conf.minimum_width_limit = f.value();
+                }
+            }
+            true
+        });
+
+        // Maximim Width Limit
+        let browse = self.browse.clone();
+        let configs = Rc::clone(&self.configs);
+        self.maximum_width_limit.handle(move |f, ev| {
+            if ev == Event::KeyUp {
+                if let Some(conf) = configs
+                    .borrow_mut()
+                    .get_mut(&browse.selected_text().unwrap())
+                {
+                    conf.maximum_width_limit = f.value();
+                }
+            }
+            true
+        });
+
         // Translucent Layer RGB
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
@@ -1097,6 +1194,8 @@ impl ConfigWindow {
         let mut tag2_position_ratio = self.tag2_position_ratio.clone();
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
+        let mut minimum_width_limit = self.minimum_width_limit.clone();
+        let mut maximum_width_limit = self.maximum_width_limit.clone();
         let mut layer_rgb = self.translucent_layer_rgb.clone();
         let mut layer_alpha = self.translucent_layer_alpha.clone();
         let mut png_format = self.png_format.clone();
@@ -1122,6 +1221,8 @@ impl ConfigWindow {
             tag2_position_ratio.set_value(conf.tag2_position_ratio);
             image_ratio_width.set_value(conf.image_ratio.0);
             image_ratio_height.set_value(conf.image_ratio.1);
+            minimum_width_limit.set_value(conf.minimum_width_limit);
+            maximum_width_limit.set_value(conf.maximum_width_limit);
             utils::set_color_btn_rgba(conf.color_layer, &mut layer_rgb);
             layer_rgb.redraw();
             layer_alpha.set_value(conf.color_layer[3] as f64);
