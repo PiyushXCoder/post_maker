@@ -167,7 +167,8 @@ impl About {
         // License Link
         self.license_link.handle(|_, ev| {
             if ev == Event::Push {
-                webbrowser::open("https://www.gnu.org/licenses/gpl-3.0.html").warn_log("Failed to open the link!");
+                webbrowser::open("https://www.gnu.org/licenses/gpl-3.0.html")
+                    .warn_log("Failed to open the link!");
             }
             true
         });

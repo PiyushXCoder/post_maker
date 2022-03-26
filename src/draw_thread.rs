@@ -14,12 +14,11 @@
 
 //! Thread to manage drawing in background
 
-use crate::globals;
-use crate::result_ext::ResultExt;
-use crate::utils::{ImageContainer, ImageProperties, ImageInfo};
 use crate::{
+    globals,
     main_window::{MainWindow, Page},
-    utils::{self, ImagePropertiesFile},
+    result_ext::ResultExt,
+    utils::{self, ImageContainer, ImageInfo, ImageProperties, ImagePropertiesFile},
     AppMessage,
 };
 use fltk::{
@@ -57,7 +56,7 @@ pub(crate) enum DrawMessage {
     /// Show details about images linke count of quotes
     ShowImagesDetails,
     /// Check If image is proper
-    CheckImage
+    CheckImage,
 }
 
 /// Spawn thread to manage all actions related to image, like: edit, save, delete
@@ -222,9 +221,7 @@ pub(crate) fn spawn_image_thread(
                         app::awake();
                     }
                 }
-                DrawMessage::ShowImagesDetails => {
-                    show_images_details(Arc::clone(&images_list))
-                }
+                DrawMessage::ShowImagesDetails => show_images_details(Arc::clone(&images_list)),
                 DrawMessage::CheckImage => {
                     let (width, height) = properties.read().unwrap().original_dimension;
                     if utils::is_too_small(width, height) {
@@ -286,8 +283,9 @@ fn load_image(
         let read = match serde_json::from_str::<ImagePropertiesFile>(&read) {
             Ok(r) => r,
             Err(e) => {
-                Result::<(),_>::Err(e).warn_log("Config is corrupt");
-                fs::remove_file(&properties_file).warn_log("Failed to delete image properties file!");
+                Result::<(), _>::Err(e).warn_log("Config is corrupt");
+                fs::remove_file(&properties_file)
+                    .warn_log("Failed to delete image properties file!");
                 ImagePropertiesFile::default()
             }
         };
@@ -379,12 +377,15 @@ fn show_images_details(images_list: Arc<RwLock<Vec<ImageInfo>>>) {
             } else {
                 image_with_quote += 1;
             }
-        }else {
+        } else {
             image_without_quote += 1;
         }
     }
 
-    utils::show_message(&format!("With Quote: {}\nWithout Quote: {}", image_with_quote, image_without_quote));
+    utils::show_message(&format!(
+        "With Quote: {}\nWithout Quote: {}",
+        image_with_quote, image_without_quote
+    ));
 }
 
 /// Flush the Buffer from image container to drawing buffer for fltk

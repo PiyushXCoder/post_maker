@@ -15,7 +15,7 @@
 //! Window to change Crop properties of image
 use crate::{
     globals,
-    utils::{self, Coord, ImageContainer, ImageProperties, ImageInfo},
+    utils::{self, Coord, ImageContainer, ImageInfo, ImageProperties},
 };
 use fltk::{
     app, button::Button, draw, enums::Event, frame::Frame, group::Flex, image::SvgImage,

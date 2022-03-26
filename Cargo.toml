@@ -1,6 +1,6 @@
 [package]
 name = "post_maker"
-version = "0.4.0-alpha.3"
+version = "0.4.0-alpha.4"
 edition = "2021"
 description = "Post Maker helps you to make post for Instagram and other Social Media apps easily."
 authors = ["PiyushXCoder <https://piyushxcoder.in>"]
@@ -23,7 +23,7 @@ simplelog = "0.11"
 fltk = "1.2"
 fltk-theme = "0.4"
 image = "0.24.1"
-imageproc = { git = "https://github.com/image-rs/imageproc"}
+imageproc = { git = "https://github.com/image-rs/imageproc" }
 webp = "0.2"
 rusttype = "0.9"
 serde_json = "1.0"

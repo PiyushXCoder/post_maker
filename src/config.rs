@@ -13,9 +13,10 @@
 */
 
 //! load, save configuration and parse cli args
-use crate::{config_picker::ConfigPicker, globals, result_ext::ResultExt, utils::ImageType};
+use crate::{
+    config_picker::ConfigPicker, dialog, globals, result_ext::ResultExt, utils::ImageType,
+};
 use clap::{ArgEnum, Parser};
-use crate::dialog;
 use fltk_theme::ThemeType;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -211,7 +212,8 @@ pub(crate) fn get_configs() -> Option<HashMap<String, ConfigFile>> {
 
 /// Save configs
 pub(crate) fn save_configs(configs: HashMap<String, ConfigFile>) {
-    std::fs::write(&*CONFIG_FILE, serde_json::to_string(&configs).unwrap()).expect_log("Can't write config!");
+    std::fs::write(&*CONFIG_FILE, serde_json::to_string(&configs).unwrap())
+        .expect_log("Can't write config!");
 }
 
 pub(crate) fn log_file() -> File {

@@ -14,9 +14,11 @@
 
 //! Window to edit configuration
 
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
-use crate::dialog;
-
+use crate::{
+    config::{self, ConfigFile},
+    dialog, globals,
+    utils::{self, ImageType},
+};
 use fltk::{
     app,
     browser::{Browser, BrowserType},
@@ -31,11 +33,7 @@ use fltk::{
     valuator::ValueInput,
     window::Window,
 };
-
-use crate::{
-    config::{self, ConfigFile},
-    globals, utils::{self, ImageType},
-};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 pub(crate) struct ConfigWindow {
     pub(crate) win: Window,
@@ -378,15 +376,10 @@ impl ConfigWindow {
         image_ratio_grp.end();
         col.set_size(&image_ratio_grp, 30);
 
-
-
-
-
         let mut label = Frame::default().with_label("Image with limits:");
         label.set_label_font(enums::Font::HelveticaBold);
         col.set_size(&label, 15);
-        let mut hint =
-            Frame::default().with_label("Limiting width of image in pixels");
+        let mut hint = Frame::default().with_label("Limiting width of image in pixels");
         hint.set_label_font(Font::CourierItalic);
         hint.set_label_size(12);
         col.set_size(&hint, 20);
@@ -422,10 +415,6 @@ impl ConfigWindow {
         col_grp.end();
         row_grp.end();
         col.set_size(&row_grp, 40);
-
-
-
-
 
         let mut label = Frame::default().with_label("Colour for dark layer:");
         label.set_label_font(enums::Font::HelveticaBold);
@@ -555,8 +544,10 @@ impl ConfigWindow {
             .set_value(config.tag2_position_ratio);
         self.image_ratio_width.set_value(config.image_ratio.0);
         self.image_ratio_height.set_value(config.image_ratio.1);
-        self.minimum_width_limit.set_value(config.minimum_width_limit);
-        self.maximum_width_limit.set_value(config.maximum_width_limit);
+        self.minimum_width_limit
+            .set_value(config.minimum_width_limit);
+        self.maximum_width_limit
+            .set_value(config.maximum_width_limit);
         utils::set_color_btn_rgba(config.color_layer, &mut self.translucent_layer_rgb);
         self.translucent_layer_alpha
             .set_value(config.color_layer[3] as f64);

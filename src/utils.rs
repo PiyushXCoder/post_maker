@@ -14,16 +14,17 @@
 
 use std::{
     fs::{self, File},
+    io::Read,
     path::{Path, PathBuf},
-    sync::{Arc, RwLock}, io::Read
+    sync::{Arc, RwLock},
 };
 
 use fltk::{button::Button, enums, prelude::*};
 use image::{DynamicImage, GenericImageView, ImageBuffer, ImageEncoder};
 use serde::{Deserialize, Serialize};
 
-use crate::result_ext::ResultExt;
 use crate::globals;
+use crate::result_ext::ResultExt;
 
 /// helps cast tupels to f64
 pub(crate) struct Coord(pub(crate) f64, pub(crate) f64);
@@ -64,7 +65,6 @@ impl Into<(i32, i32)> for Coord {
     }
 }
 
-
 impl Into<(usize, usize)> for Coord {
     fn into(self) -> (usize, usize) {
         (self.0 as usize, self.1 as usize)
@@ -74,7 +74,7 @@ impl Into<(usize, usize)> for Coord {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct ImageInfo {
     pub(crate) path: PathBuf,
-    pub(crate) image_type: ImageType
+    pub(crate) image_type: ImageType,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -82,16 +82,16 @@ pub(crate) enum ImageType {
     Jpeg,
     Png,
     Webp,
-    None
+    None,
 }
 
 impl ImageType {
     pub(crate) fn from_mime(v: &str) -> Self {
         match v {
-            "image/jpeg" | "image/jpg" =>  Self::Jpeg,
-            "image/png" =>  Self::Png,
-            "image/webp" =>  Self::Webp,
-            _ => Self::None
+            "image/jpeg" | "image/jpg" => Self::Jpeg,
+            "image/png" => Self::Png,
+            "image/webp" => Self::Webp,
+            _ => Self::None,
         }
     }
 
@@ -100,8 +100,9 @@ impl ImageType {
             Self::Jpeg => "jpg",
             Self::Png => "png",
             Self::Webp => "webp",
-            Self::None => "none"
-        }.to_owned()
+            Self::None => "none",
+        }
+        .to_owned()
     }
 }
 
@@ -221,7 +222,11 @@ impl ImageContainer {
         let prop = self.properties.read().unwrap();
         let image_info = &prop.image_info;
         let (export_path, path_properties, mut original_image) = match image_info {
-            Some(p) => (get_export_image_path(p), get_properties_path(p), load_image(p)),
+            Some(p) => (
+                get_export_image_path(p),
+                get_properties_path(p),
+                load_image(p),
+            ),
             None => return,
         };
         let config = globals::CONFIG.read().unwrap();
@@ -229,7 +234,11 @@ impl ImageContainer {
 
         let mut prop = prop.clone();
         prop.image_info = None;
-        fs::write(&path_properties, serde_json::to_string(&ImagePropertiesFile::from(&prop)).unwrap()).warn_log("Failed to save properties!");
+        fs::write(
+            &path_properties,
+            serde_json::to_string(&ImagePropertiesFile::from(&prop)).unwrap(),
+        )
+        .warn_log("Failed to save properties!");
 
         let (width, height): (f64, f64) = Coord::from(original_image.dimensions()).into();
         let (crop_x, crop_y) = prop.crop_position.unwrap();
@@ -242,8 +251,15 @@ impl ImageContainer {
         );
 
         if crop_width > config.maximum_width_limit {
-            let (resize_width,resize_height) = (config.maximum_width_limit, height_from_width(config.maximum_width_limit));
-            img = img.resize_exact(resize_width as u32,resize_height as u32, image::imageops::FilterType::Lanczos3);
+            let (resize_width, resize_height) = (
+                config.maximum_width_limit,
+                height_from_width(config.maximum_width_limit),
+            );
+            img = img.resize_exact(
+                resize_width as u32,
+                resize_height as u32,
+                image::imageops::FilterType::Lanczos3,
+            );
         }
 
         draw_layer_and_text(
@@ -275,16 +291,18 @@ impl ImageContainer {
                 let encoder = image::codecs::png::PngEncoder::new_with_quality(
                     &mut output,
                     image::codecs::png::CompressionType::Best,
-                    image::codecs::png::FilterType::Sub
+                    image::codecs::png::FilterType::Sub,
                 );
 
                 let (w, h) = img.dimensions();
-                encoder.write_image(&img.into_rgba8(), w, h, image::ColorType::Rgba8).warn_log("Failed to export Image!");
+                encoder
+                    .write_image(&img.into_rgba8(), w, h, image::ColorType::Rgba8)
+                    .warn_log("Failed to export Image!");
             }
             ImageType::Jpeg => {
                 let (width, height) = Coord::from(img.dimensions()).into();
                 let buf = img.into_rgb8();
-                
+
                 let mut comp = mozjpeg::Compress::new(mozjpeg::ColorSpace::JCS_RGB);
 
                 comp.set_size(width, height);
@@ -298,8 +316,10 @@ impl ImageContainer {
                 comp.finish_compress();
 
                 match comp.data_to_vec() {
-                    Ok(data) => std::fs::write(&export_path, data).warn_log("Failed to export Image!"),
-                    Err(e) => Result::<(), _>::Err(e).warn_log("Failed to encode image!")
+                    Ok(data) => {
+                        std::fs::write(&export_path, data).warn_log("Failed to export Image!")
+                    }
+                    Err(e) => Result::<(), _>::Err(e).warn_log("Failed to encode image!"),
                 }
             }
             _ => (),
@@ -325,11 +345,13 @@ impl ImageContainer {
                 let path_properties_new = get_properties_path(&new_image_info);
 
                 if image_info.path.exists() {
-                    fs::copy(&image_info.path, &new_image_info.path).warn_log("Failed to clone image!");
+                    fs::copy(&image_info.path, &new_image_info.path)
+                        .warn_log("Failed to clone image!");
                 }
 
                 if path_properties.exists() {
-                    fs::copy(path_properties, &path_properties_new).warn_log("Failed to clone image properties!");
+                    fs::copy(path_properties, &path_properties_new)
+                        .warn_log("Failed to clone image properties!");
                 }
                 Some(new_image_info)
             }
@@ -342,7 +364,11 @@ impl ImageContainer {
 
         let image_info = &prop.image_info;
         let (export_path, path_image, path_properties) = match image_info {
-            Some(p) => (get_export_image_path(p), Path::new(&p.path), get_properties_path(p)),
+            Some(p) => (
+                get_export_image_path(p),
+                Path::new(&p.path),
+                get_properties_path(p),
+            ),
             None => return,
         };
 
@@ -490,7 +516,10 @@ fn load_image(image_info: &ImageInfo) -> DynamicImage {
             let mut f = File::open(&image_info.path).expect_log("Failed to open image!");
             let mut buf = vec![];
             f.read_to_end(&mut buf).expect_log("Failed to read image!");
-            let a = webp::Decoder::new(&buf).decode().ok_or("").expect_log("Failed to decode image!");
+            let a = webp::Decoder::new(&buf)
+                .decode()
+                .ok_or("")
+                .expect_log("Failed to decode image!");
             a.to_image()
         }
         ImageType::Jpeg => {
@@ -498,15 +527,20 @@ fn load_image(image_info: &ImageInfo) -> DynamicImage {
             let mut buf = vec![];
             f.read_to_end(&mut buf).expect_log("Failed to read image!");
 
-            let d = mozjpeg::Decompress::with_markers(mozjpeg::ALL_MARKERS).from_mem(&buf)
-                        .expect_log("Failed to decompress image!");
+            let d = mozjpeg::Decompress::with_markers(mozjpeg::ALL_MARKERS)
+                .from_mem(&buf)
+                .expect_log("Failed to decompress image!");
             let mut image = d.rgb().expect_log("Failed to covert to rgb image!");
             let pixels = image.read_scanlines_flat().unwrap();
-            let image = ImageBuffer::from_raw(image.width() as u32, image.height() as u32, pixels).unwrap();
+            let image =
+                ImageBuffer::from_raw(image.width() as u32, image.height() as u32, pixels).unwrap();
             DynamicImage::ImageRgb8(image)
         }
         ImageType::Png => {
-            let dec = image::codecs::png::PngDecoder::new(File::open(&image_info.path).expect_log("Failed to open image!")).expect_log("Failed to decode image!");
+            let dec = image::codecs::png::PngDecoder::new(
+                File::open(&image_info.path).expect_log("Failed to open image!"),
+            )
+            .expect_log("Failed to decode image!");
             DynamicImage::from_decoder(dec).expect_log("Failed to open image!")
         }
         ImageType::None => {
@@ -659,13 +693,11 @@ pub(crate) fn get_properties_path(image_info: &ImageInfo) -> PathBuf {
     let path = img.with_extension("prop");
 
     if path.exists() {
-        match std::fs::copy(&path, &default_path){
-            Ok(_) => {
-                std::fs::remove_file(&path).warn_log("Failed to delete depricated prop file")
-            }
-            Err(e) => Result::<(), _>::Err(e).warn_log("Failed to copy depricated prop file")
+        match std::fs::copy(&path, &default_path) {
+            Ok(_) => std::fs::remove_file(&path).warn_log("Failed to delete depricated prop file"),
+            Err(e) => Result::<(), _>::Err(e).warn_log("Failed to copy depricated prop file"),
         }
-    } 
+    }
 
     default_path
 }
@@ -674,9 +706,24 @@ pub(crate) fn get_properties_path(image_info: &ImageInfo) -> PathBuf {
 pub(crate) fn get_export_image_path(image_info: &ImageInfo) -> PathBuf {
     let config = globals::CONFIG.read().unwrap();
     let export_format = &config.image_format;
-    let mut export = image_info.path.parent().unwrap().join("export")
-        .join(format!("{}-{}", image_info.path.file_stem().unwrap_or_default().to_string_lossy(), 
-        image_info.path.extension().unwrap_or_default().to_string_lossy()));
+    let mut export = image_info
+        .path
+        .parent()
+        .unwrap()
+        .join("export")
+        .join(format!(
+            "{}-{}",
+            image_info
+                .path
+                .file_stem()
+                .unwrap_or_default()
+                .to_string_lossy(),
+            image_info
+                .path
+                .extension()
+                .unwrap_or_default()
+                .to_string_lossy()
+        ));
     export.set_extension(export_format.as_extension());
     export
 }

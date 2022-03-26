@@ -13,16 +13,16 @@
 */
 
 //! Main window where you do all editing
-use crate::about_window::About;
-use crate::crop_window::CropWindow;
-use crate::draw_thread::*;
-use crate::result_ext::ResultExt;
-use crate::utils;
-use crate::utils::ImageInfo;
-use crate::utils::ImageType;
-use crate::utils::ImageProperties;
-use crate::{config_window::ConfigWindow, globals};
-use crate::dialog;
+use crate::{
+    about_window::About,
+    config_window::ConfigWindow,
+    crop_window::CropWindow,
+    dialog,
+    draw_thread::*,
+    globals,
+    result_ext::ResultExt,
+    utils::{self, ImageInfo, ImageProperties, ImageType},
+};
 use fltk::{
     button::Button,
     dialog::NativeFileChooser,
@@ -38,10 +38,13 @@ use fltk::{
     valuator::{Slider, SliderType},
     window::Window,
 };
-use std::ffi::OsStr;
-use std::path::PathBuf;
-use std::sync::{mpsc, RwLock};
-use std::{ fs, sync::Arc};
+use std::{
+    ffi::OsStr,
+    fs,
+    path::PathBuf,
+    sync::Arc,
+    sync::{mpsc, RwLock},
+};
 
 pub(crate) struct MainWindow {
     pub(crate) win: Window,
@@ -430,7 +433,12 @@ impl MainWindow {
                         return;
                     }
                 }
-                win.set_label(&format!("{} - Post Maker", path.file_name().unwrap_or(OsStr::new("Unknown")).to_string_lossy()));
+                win.set_label(&format!(
+                    "{} - Post Maker",
+                    path.file_name()
+                        .unwrap_or(OsStr::new("Unknown"))
+                        .to_string_lossy()
+                ));
                 load_dir(&path, Arc::clone(&imgs), &mut file_choice, &sender);
             },
         );
@@ -1047,7 +1055,10 @@ fn load_dir(
                 ImageType::None => (),
                 _ => {
                     text = format!("{}|{}", text, path.file_name().unwrap().to_str().unwrap());
-                    imgs_b.push(ImageInfo { path, image_type: ImageType::from_mime(mime) });
+                    imgs_b.push(ImageInfo {
+                        path,
+                        image_type: ImageType::from_mime(mime),
+                    });
                 }
             }
         }

@@ -1,5 +1,4 @@
-use std::fmt::Debug;
-use std::panic::Location;
+use std::{fmt::Debug, panic::Location};
 
 use crate::utils;
 
