@@ -17,17 +17,20 @@
 extern crate log;
 extern crate simplelog;
 
-mod dialog;
+#[macro_use]
+mod macros;
+
 mod about_window;
 mod config;
 mod config_picker;
 mod config_window;
 mod crop_window;
+mod dialog;
 mod draw_thread;
 mod globals;
 mod main_window;
-mod utils;
 mod result_ext;
+mod utils;
 
 use fltk::{
     app::{channel, App},
@@ -47,7 +50,7 @@ pub(crate) enum AppMessage {
     Alert(String),
 
     // Only for Main windows
-    DeleteImage
+    DeleteImage,
 }
 
 fn main() {
@@ -73,28 +76,32 @@ fn main() {
     let draw_buff: Arc<RwLock<Option<Vec<u8>>>> = Arc::new(RwLock::new(None));
 
     let (main_sender, main_receiver) = channel::<AppMessage>();
-    *globals::MAIN_SENDER.write().unwrap() = Some(main_sender);
+    *rw_write!(globals::MAIN_SENDER) = Some(main_sender);
     let mut main_window = MainWindow::new(Arc::clone(&draw_buff));
 
     while app.wait() {
         if let Some(msg) = main_receiver.recv() {
             match msg {
                 AppMessage::RedrawMainWindowImage(data) => {
-                    let mut buff = draw_buff.write().unwrap();
+                    let mut buff = rw_write!(draw_buff);
                     *buff = data;
                     main_window.win.redraw();
                 }
                 AppMessage::Message(msg) => {
                     dialog::message_default(&msg);
                 }
-                AppMessage::Alert(msg) => {
-                    dialog::alert_default(&msg)
-                }
+                AppMessage::Alert(msg) => dialog::alert_default(&msg),
                 AppMessage::DeleteImage => {
                     let ch = dialog::choice_default("Image is too small", "Delete", "Keep");
                     if ch == 0 {
-                        main_window.sender.send(draw_thread::DrawMessage::Delete).unwrap();
-                        main_window.sender.send(draw_thread::DrawMessage::Open).unwrap();
+                        main_window
+                            .sender
+                            .send(draw_thread::DrawMessage::Delete)
+                            .unwrap();
+                        main_window
+                            .sender
+                            .send(draw_thread::DrawMessage::Open)
+                            .unwrap();
                         main_window.page.image.redraw();
                         main_window.file_choice.redraw();
                     }

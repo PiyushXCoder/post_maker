@@ -29,13 +29,13 @@ lazy_static! {
     pub(crate) static ref CONFIG: RwLock<config::ConfigFile> =
         RwLock::new(config::ConfigFile::load());
 
-    /// Main Sender 
+    /// Main Sender
     pub(crate) static ref MAIN_SENDER: RwLock<Option<fltk::app::Sender<crate::AppMessage>>> = RwLock::new(None);
 
     /// TTF Font for Quote
     pub(crate) static ref FONT_QUOTE: Font<'static> = {
         let mut buffer = Vec::new();
-        if let Ok(mut file) = std::fs::File::open(CONFIG.read().unwrap().quote_font.as_str()) {
+        if let Ok(mut file) = std::fs::File::open(rw_read!(CONFIG).quote_font.as_str()) {
             if let Ok(_) = file.read_to_end(&mut buffer) {
                 if let Some(out) = rusttype::Font::try_from_vec(buffer) {
                     return out;
@@ -51,7 +51,7 @@ lazy_static! {
     /// TTF Font for Subquote
     pub(crate) static ref FONT_SUBQUOTE: Font<'static> = {
         let mut buffer = Vec::new();
-        if let Ok(mut file) = std::fs::File::open(CONFIG.read().unwrap().subquote_font.as_str())
+        if let Ok(mut file) = std::fs::File::open(rw_read!(CONFIG).subquote_font.as_str())
         {
             if let Ok(_) = file.read_to_end(&mut buffer) {
                 if let Some(out) = rusttype::Font::try_from_vec(buffer) {
@@ -69,7 +69,7 @@ lazy_static! {
     pub(crate) static ref FONT_SUBQUOTE2: Font<'static> = {
         let mut buffer = Vec::new();
         if let Ok(mut file) =
-            std::fs::File::open(CONFIG.read().unwrap().subquote2_font.as_str())
+            std::fs::File::open(rw_read!(CONFIG).subquote2_font.as_str())
         {
             if let Ok(_) = file.read_to_end(&mut buffer) {
                 if let Some(out) = rusttype::Font::try_from_vec(buffer) {
@@ -86,7 +86,7 @@ lazy_static! {
     /// TTF Font for Tag
     pub(crate) static ref FONT_TAG: Font<'static> = {
         let mut buffer = Vec::new();
-        if let Ok(mut file) = std::fs::File::open(&CONFIG.read().unwrap().tag_font.as_str()) {
+        if let Ok(mut file) = std::fs::File::open(&rw_read!(CONFIG).tag_font.as_str()) {
             if let Ok(_) = file.read_to_end(&mut buffer) {
                 if let Some(out) = rusttype::Font::try_from_vec(buffer) {
                     return out;
@@ -100,7 +100,7 @@ lazy_static! {
     /// TTF Font for Tag 2
     pub(crate) static ref FONT_TAG2: Font<'static> = {
         let mut buffer = Vec::new();
-        if let Ok(mut file) = std::fs::File::open(&CONFIG.read().unwrap().tag2_font.as_str()) {
+        if let Ok(mut file) = std::fs::File::open(&rw_read!(CONFIG).tag2_font.as_str()) {
             if let Ok(_) = file.read_to_end(&mut buffer) {
                 if let Some(out) = rusttype::Font::try_from_vec(buffer) {
                     return out;

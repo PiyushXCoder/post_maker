@@ -510,7 +510,7 @@ impl ConfigWindow {
 
     // Show to edit config
     pub(crate) fn show(&mut self) -> bool {
-        let config_name = &*globals::CONFIG_NAME.read().unwrap();
+        let config_name = &*rw_read!(globals::CONFIG_NAME);
         self.browse.clear();
         for (idx, name) in self.configs.borrow().keys().enumerate() {
             self.browse.add(name);
@@ -519,7 +519,7 @@ impl ConfigWindow {
             }
         }
         *self.selected_browse_line.borrow_mut() = self.browse.value();
-        let config = globals::CONFIG.read().unwrap();
+        let config = rw_read!(globals::CONFIG);
         self.quote_font.set_value(config.quote_font.as_str());
         self.subquote_font.set_value(config.subquote_font.as_str());
         self.subquote2_font
@@ -1232,8 +1232,8 @@ impl ConfigWindow {
         self.save_btn.set_callback(move |_| {
             config::save_configs((*configs.borrow()).clone());
 
-            if let Some(c) = configs.borrow().get(&*globals::CONFIG_NAME.read().unwrap()) {
-                *globals::CONFIG.write().unwrap() = c.to_owned();
+            if let Some(c) = configs.borrow().get(&*rw_read!(globals::CONFIG_NAME)) {
+                *rw_write!(globals::CONFIG) = c.to_owned();
             }
             *did_save.borrow_mut() = true;
             win.hide();

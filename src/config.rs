@@ -171,7 +171,7 @@ impl ConfigFile {
                 None => HashMap::new(),
             };
 
-            let default_config = (&*globals::CONFIG_NAME.read().unwrap()).to_string();
+            let default_config = (&*rw_read!(globals::CONFIG_NAME)).to_string();
             let config_name = if (map.len() > 1 || !map.contains_key(&default_config))
                 && map.len() != 0
             {
@@ -186,7 +186,7 @@ impl ConfigFile {
             };
 
             if let Some(config) = map.get(&config_name) {
-                *globals::CONFIG_NAME.write().unwrap() = config_name;
+                *rw_write!(globals::CONFIG_NAME) = config_name;
                 return config.to_owned();
             }
         }
@@ -194,7 +194,7 @@ impl ConfigFile {
         let config = Self::default();
         let mut configs = HashMap::new();
         configs.insert(
-            (&*globals::CONFIG_NAME.read().unwrap()).to_owned(),
+            (&*rw_read!(globals::CONFIG_NAME)).to_owned(),
             config.clone(),
         );
         save_configs(configs);

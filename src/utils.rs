@@ -119,8 +119,8 @@ impl ImageContainer {
         let img = load_image(&image_info);
         let (width, height): (f64, f64) = Coord::from(img.dimensions()).into();
 
-        let config = globals::CONFIG.read().unwrap();
-        let mut prop = properties.write().unwrap();
+        let config = rw_read!(globals::CONFIG);
+        let mut prop = rw_write!(properties);
         prop.image_info = Some(image_info.to_owned());
         prop.original_dimension = (width, height);
         prop.quote_position = height * config.quote_position_ratio;
@@ -138,7 +138,7 @@ impl ImageContainer {
 
     /// Resize image
     pub(crate) fn apply_resize(&mut self) {
-        let mut prop = self.properties.write().unwrap();
+        let mut prop = rw_write!(self.properties);
         let (width, height) = prop.dimension;
         let (s_width, s_height) = ((width * 500.0) / height, 500.0);
 
@@ -150,7 +150,7 @@ impl ImageContainer {
 
     /// Crop Image
     pub(crate) fn apply_crop(&mut self) {
-        let mut prop = self.properties.write().unwrap();
+        let mut prop = rw_write!(self.properties);
         let (original_width, original_height) = prop.original_dimension;
         let (origina_crop_width, origina_crop_height) =
             croped_ratio(original_width, original_height);
@@ -173,7 +173,7 @@ impl ImageContainer {
     }
 
     pub(crate) fn apply_crop_position(&mut self, original_x: f64, original_y: f64) {
-        let mut prop = self.properties.write().unwrap();
+        let mut prop = rw_write!(self.properties);
         let (original_width, original_height) = prop.original_dimension;
         prop.crop_position = Some((original_x, original_y));
 
@@ -195,7 +195,7 @@ impl ImageContainer {
 
     /// Redraw: Copy image from main image to buffer and draw text and all on it
     pub(crate) fn redraw_to_buffer(&mut self) {
-        let prop = self.properties.read().unwrap();
+        let prop = rw_read!(self.properties);
         let mut tmp = self.image.clone();
 
         draw_layer_and_text(
@@ -219,7 +219,7 @@ impl ImageContainer {
 
     /// Save image and properities
     pub(crate) fn save(&self) {
-        let prop = self.properties.read().unwrap();
+        let prop = rw_read!(self.properties);
         let image_info = &prop.image_info;
         let (export_path, path_properties, mut original_image) = match image_info {
             Some(p) => (
@@ -229,7 +229,7 @@ impl ImageContainer {
             ),
             None => return,
         };
-        let config = globals::CONFIG.read().unwrap();
+        let config = rw_read!(globals::CONFIG);
         let export_format = &config.image_format;
 
         let mut prop = prop.clone();
@@ -327,7 +327,7 @@ impl ImageContainer {
     }
 
     pub(crate) fn clone_img(&self) -> Option<ImageInfo> {
-        let prop = self.properties.read().unwrap();
+        let prop = rw_read!(self.properties);
 
         match &prop.image_info {
             Some(image_info) => {
@@ -360,7 +360,7 @@ impl ImageContainer {
     }
 
     pub(crate) fn delete(&self) {
-        let prop = self.properties.read().unwrap();
+        let prop = rw_read!(self.properties);
 
         let image_info = &prop.image_info;
         let (export_path, path_image, path_properties) = match image_info {
@@ -505,7 +505,7 @@ impl ImageProperties {
         self.tag2_position = props.tag2_position.unwrap_or(self.tag2_position);
         self.translucent_layer_color = props
             .translucent_layer_color
-            .unwrap_or(globals::CONFIG.read().unwrap().color_layer);
+            .unwrap_or(rw_read!(globals::CONFIG).color_layer);
     }
 }
 
@@ -704,7 +704,7 @@ pub(crate) fn get_properties_path(image_info: &ImageInfo) -> PathBuf {
 
 /// path of properties files
 pub(crate) fn get_export_image_path(image_info: &ImageInfo) -> PathBuf {
-    let config = globals::CONFIG.read().unwrap();
+    let config = rw_read!(globals::CONFIG);
     let export_format = &config.image_format;
     let mut export = image_info
         .path
@@ -740,7 +740,7 @@ pub(crate) fn set_color_btn_rgba(rgba: [u8; 4], btn: &mut Button) {
 /// Check if image is too small
 pub(crate) fn is_too_small(width: f64, height: f64) -> bool {
     let (crop_width, _) = croped_ratio(width, height);
-    if crop_width < globals::CONFIG.read().unwrap().minimum_width_limit {
+    if crop_width < rw_read!(globals::CONFIG).minimum_width_limit {
         true
     } else {
         false
@@ -758,50 +758,50 @@ pub(crate) fn croped_ratio(width: f64, height: f64) -> (f64, f64) {
 
 /// Get required witdh to crop image from height as per image ratio
 pub(crate) fn width_from_height(height: f64) -> f64 {
-    let (w, h) = globals::CONFIG.read().unwrap().image_ratio;
+    let (w, h) = rw_read!(globals::CONFIG).image_ratio;
     (w * height) / h
 }
 
 /// Get required height to crop image from width as per image ratio
 pub(crate) fn height_from_width(width: f64) -> f64 {
-    let (w, h) = globals::CONFIG.read().unwrap().image_ratio;
+    let (w, h) = rw_read!(globals::CONFIG).image_ratio;
     (h * width) / w
 }
 
 /// Get required quote size for crop image from height as per image ratio
 pub(crate) fn quote_from_height(height: f64) -> f64 {
-    (height * globals::CONFIG.read().unwrap().quote_font_ratio) / 5000.0
+    (height * rw_read!(globals::CONFIG).quote_font_ratio) / 5000.0
 }
 
 /// Get required subquote size for crop image from height as per image ratio
 pub(crate) fn subquote_from_height(height: f64) -> f64 {
-    (height * globals::CONFIG.read().unwrap().subquote_font_ratio) / 5000.0
+    (height * rw_read!(globals::CONFIG).subquote_font_ratio) / 5000.0
 }
 
 /// Get required subquote2 size for crop image from height as per image ratio
 pub(crate) fn subquote2_from_height(height: f64) -> f64 {
-    (height * globals::CONFIG.read().unwrap().subquote2_font_ratio) / 5000.0
+    (height * rw_read!(globals::CONFIG).subquote2_font_ratio) / 5000.0
 }
 
 /// Get required tag size for crop image from height as per image ratio
 pub(crate) fn tag_from_height(height: f64) -> f64 {
-    (height * globals::CONFIG.read().unwrap().tag_font_ratio) / 5000.0
+    (height * rw_read!(globals::CONFIG).tag_font_ratio) / 5000.0
 }
 
 /// Get required tag2 size for crop image from height as per image ratio
 pub(crate) fn tag2_from_height(height: f64) -> f64 {
-    (height * globals::CONFIG.read().unwrap().tag2_font_ratio) / 5000.0
+    (height * rw_read!(globals::CONFIG).tag2_font_ratio) / 5000.0
 }
 
 pub(crate) fn show_message(msg: &str) {
-    let a = globals::MAIN_SENDER.read().unwrap();
+    let a = rw_read!(globals::MAIN_SENDER);
     if let Some(a) = &*a {
         a.send(crate::AppMessage::Message(msg.to_owned()));
     }
 }
 
 pub(crate) fn show_alert(msg: &str) {
-    let a = globals::MAIN_SENDER.read().unwrap();
+    let a = rw_read!(globals::MAIN_SENDER);
     if let Some(a) = &*a {
         a.send(crate::AppMessage::Alert(msg.to_owned()));
     }

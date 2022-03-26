@@ -185,7 +185,7 @@ pub(crate) fn spawn_image_thread(
                         win.deactivate();
                         if let Some(image_info) = cont.clone_img() {
                             let idx = file_choice.value();
-                            let mut imgs = images_list.write().unwrap();
+                            let mut imgs = rw_write!(images_list);
                             imgs.insert(idx as usize, image_info.clone());
                             file_choice.insert(
                                 idx,
@@ -207,7 +207,7 @@ pub(crate) fn spawn_image_thread(
                         status.set_label("Deleting...");
                         win.deactivate();
                         cont.delete();
-                        let mut imgs = images_list.write().unwrap();
+                        let mut imgs = rw_write!(images_list);
                         imgs.remove(file_choice.value() as usize);
                         file_choice.remove(file_choice.value());
                         if file_choice.value() != imgs.len() as i32 {
@@ -223,10 +223,9 @@ pub(crate) fn spawn_image_thread(
                 }
                 DrawMessage::ShowImagesDetails => show_images_details(Arc::clone(&images_list)),
                 DrawMessage::CheckImage => {
-                    let (width, height) = properties.read().unwrap().original_dimension;
+                    let (width, height) = rw_read!(properties).original_dimension;
                     if utils::is_too_small(width, height) {
-                        let a = globals::MAIN_SENDER.read().unwrap();
-                        if let Some(a) = &*a {
+                        if let Some(a) = &*rw_read!(globals::MAIN_SENDER) {
                             a.send(crate::AppMessage::DeleteImage);
                         }
                     }
@@ -265,7 +264,7 @@ fn load_image(
     properties: Arc<RwLock<ImageProperties>>,
     container: &mut Option<ImageContainer>,
 ) {
-    let imgs = images_list.read().unwrap();
+    let imgs = rw_read!(images_list);
     if imgs.len() == 0 {
         *container = None;
         flush_buffer(app_sender, container);
@@ -290,7 +289,7 @@ fn load_image(
             }
         };
 
-        let mut properties = cont.properties.write().unwrap();
+        let mut properties = rw_write!(cont.properties);
         properties.merge(read, &tag.value(), &tag2.value());
         properties.is_saved = true;
 
@@ -344,7 +343,7 @@ fn load_image(
         }
 
         cont.apply_resize();
-        let (width, height) = cont.properties.read().unwrap().dimension;
+        let (width, height) = rw_read!(cont.properties).dimension;
         page.col_flex.set_size(&page.image, height as i32);
         page.row_flex.set_size(&page.col_flex, width as i32);
         page.col_flex.recalc();
@@ -358,7 +357,7 @@ fn show_images_details(images_list: Arc<RwLock<Vec<ImageInfo>>>) {
     let mut image_with_quote: usize = 0;
     let mut image_without_quote: usize = 0;
 
-    let list = images_list.read().unwrap();
+    let list = rw_read!(images_list);
     for image_info in list.iter() {
         let properties_file = utils::get_properties_path(&image_info);
 

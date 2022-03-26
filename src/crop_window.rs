@@ -113,7 +113,7 @@ impl CropWindow {
         let mut container =
             ImageContainer::new(path, Arc::new(RwLock::new(ImageProperties::default())));
         {
-            let prop = &mut container.properties.write().unwrap();
+            let prop = &mut rw_write!(container.properties);
             prop.dimension = prop.original_dimension;
             prop.crop_position = match crop_pos {
                 Some(a) => Some(a),
@@ -145,7 +145,7 @@ impl CropWindow {
         }
 
         if let Some(cont) = &*self.container.borrow() {
-            cont.properties.read().unwrap().crop_position
+            rw_read!(cont.properties).crop_position
         } else {
             None
         }
@@ -168,7 +168,7 @@ impl CropWindow {
                 )
                 .unwrap();
 
-                let prop = cont.properties.read().unwrap();
+                let prop = rw_read!(cont.properties);
                 let (original_width, original_height) = prop.original_dimension;
                 let (original_x, original_y) = prop.crop_position.unwrap();
                 let (resized_width, resized_height) = (image.width() as f64, image.height() as f64);
@@ -200,7 +200,7 @@ impl CropWindow {
             if let Some(cont) = &*container.borrow_mut() {
                 let image = &cont.buffer;
 
-                let mut prop = cont.properties.write().unwrap();
+                let mut prop = rw_write!(cont.properties);
 
                 let (original_x, original_y) = match prop.crop_position {
                     Some(v) => v,
@@ -271,7 +271,7 @@ impl CropWindow {
         let container = Rc::clone(&self.container);
         self.win.set_callback(move |f| {
             if let Some(cont) = &*container.borrow_mut() {
-                cont.properties.write().unwrap().crop_position = None;
+                rw_write!(cont.properties).crop_position = None;
             }
             f.hide();
         });

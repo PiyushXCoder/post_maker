@@ -397,8 +397,7 @@ impl MainWindow {
             sender: rx,
         };
 
-        let a = globals::MAIN_SENDER.read().unwrap();
-        if let Some(a) = &*a {
+        if let Some(a) = &*rw_read!(globals::MAIN_SENDER) {
             spawn_image_thread(tx, a.to_owned(), Arc::clone(&properties), &main_win);
         }
         main_win.menu();
@@ -450,7 +449,7 @@ impl MainWindow {
             Shortcut::Ctrl | 's',
             menu::MenuFlag::Normal,
             move |_| {
-                let mut prop = properties.write().unwrap();
+                let mut prop = rw_write!(properties);
                 prop.is_saved = true;
                 sender.send(DrawMessage::Save).unwrap();
             },
@@ -498,8 +497,8 @@ impl MainWindow {
         let buff = Arc::clone(&self.draw_buff);
         let properties = Arc::clone(&self.properties);
         self.page.image.draw(move |f| {
-            let (width, height) = properties.read().unwrap().dimension;
-            if let Some(image) = &*buff.read().unwrap() {
+            let (width, height) = rw_read!(properties).dimension;
+            if let Some(image) = &*rw_read!(buff) {
                 dr::draw_image(
                     &image,
                     f.x(),
@@ -520,7 +519,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         let imgs = Arc::clone(&self.images_list);
         self.reset_file_choice.set_callback(move |_| {
-            let path = match imgs.read().unwrap().first() {
+            let path = match rw_read!(imgs).first() {
                 Some(image_info) => image_info.path.parent().unwrap().to_path_buf(),
                 None => return,
             };
@@ -534,8 +533,8 @@ impl MainWindow {
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
         self.reset_translucent_layer_btn.set_callback(move |_| {
-            let mut prop = properties.write().unwrap();
-            let color = globals::CONFIG.read().unwrap().color_layer;
+            let mut prop = rw_write!(properties);
+            let color = rw_read!(globals::CONFIG).color_layer;
             prop.translucent_layer_color = color;
             prop.is_saved = false;
             utils::set_color_btn_rgba(color, &mut layer_rgb);
@@ -552,9 +551,9 @@ impl MainWindow {
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
         self.reset_quote_position_btn.set_callback(move |_| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             let height = prop.original_dimension.1;
-            let pos = height * globals::CONFIG.read().unwrap().quote_position_ratio;
+            let pos = height * rw_read!(globals::CONFIG).quote_position_ratio;
             prop.quote_position = pos;
             prop.is_saved = false;
             quote_position.set_value(pos);
@@ -572,9 +571,9 @@ impl MainWindow {
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
         self.reset_subquote_position_btn.set_callback(move |_| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             let height = prop.original_dimension.1;
-            let pos = height * globals::CONFIG.read().unwrap().subquote_position_ratio;
+            let pos = height * rw_read!(globals::CONFIG).subquote_position_ratio;
             prop.subquote_position = pos;
             prop.is_saved = false;
             subquote_position.set_value(pos);
@@ -592,9 +591,9 @@ impl MainWindow {
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
         self.reset_subquote2_position_btn.set_callback(move |_| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             let height = prop.original_dimension.1;
-            let pos = height * globals::CONFIG.read().unwrap().subquote2_position_ratio;
+            let pos = height * rw_read!(globals::CONFIG).subquote2_position_ratio;
             prop.subquote2_position = pos;
             prop.is_saved = false;
             subquote2_position.set_value(pos);
@@ -612,9 +611,9 @@ impl MainWindow {
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
         self.reset_tag_position_btn.set_callback(move |_| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             let height = prop.original_dimension.1;
-            let pos = height * globals::CONFIG.read().unwrap().tag_position_ratio;
+            let pos = height * rw_read!(globals::CONFIG).tag_position_ratio;
             prop.tag_position = pos;
             prop.is_saved = false;
             tag_position.set_value(pos);
@@ -632,9 +631,9 @@ impl MainWindow {
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
         self.reset_tag2_position_btn.set_callback(move |_| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             let height = prop.original_dimension.1;
-            let pos = height * globals::CONFIG.read().unwrap().tag2_position_ratio;
+            let pos = height * rw_read!(globals::CONFIG).tag2_position_ratio;
             prop.tag2_position = pos;
             prop.is_saved = false;
             tag2_position.set_value(pos);
@@ -649,7 +648,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
         self.save_btn.set_callback(move |_| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             prop.is_saved = true;
             sender.send(DrawMessage::Save).unwrap()
         });
@@ -689,7 +688,7 @@ impl MainWindow {
         let mut crop_win = CropWindow::new();
         let sender = self.sender.clone();
         self.crop_btn.set_callback(move |_| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             if let Some(image_info) = &prop.image_info {
                 if let Some((x, y)) = crop_win.load_to_crop(&image_info, prop.crop_position) {
                     sender.send(DrawMessage::ChangeCrop((x, y))).unwrap();
@@ -703,7 +702,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
         self.next_btn.set_callback(move |_| {
-            let prop = properties.read().unwrap();
+            let prop = rw_read!(properties);
             if !prop.is_saved {
                 let save = fltk::dialog::choice_default("Save?", "yes", "no", "cancel");
                 match save {
@@ -727,7 +726,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
         self.back_btn.set_callback(move |_| {
-            let prop = properties.read().unwrap();
+            let prop = rw_read!(properties);
             if !prop.is_saved {
                 let save = fltk::dialog::choice_default("Save?", "yes", "no", "cancel");
                 match save {
@@ -750,7 +749,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         let properties = Arc::clone(&self.properties);
         self.file_choice.set_callback(move |_| {
-            let prop = properties.read().unwrap();
+            let prop = rw_read!(properties);
             if !prop.is_saved {
                 let save = fltk::dialog::choice_default("Save?", "yes", "no", "cancel");
                 match save {
@@ -769,7 +768,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         self.quote.handle(move |f, ev| {
             if ev == enums::Event::KeyUp {
-                let mut prop = properties.write().unwrap();
+                let mut prop = rw_write!(properties);
                 prop.quote = f.value();
                 prop.is_saved = false;
                 sender.send(DrawMessage::RedrawToBuffer).unwrap();
@@ -785,7 +784,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         self.subquote.handle(move |f, ev| {
             if ev == enums::Event::KeyUp {
-                let mut prop = properties.write().unwrap();
+                let mut prop = rw_write!(properties);
                 prop.subquote = f.value();
                 prop.is_saved = false;
                 sender.send(DrawMessage::RedrawToBuffer).unwrap();
@@ -801,7 +800,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         self.subquote2.handle(move |f, ev| {
             if ev == enums::Event::KeyUp {
-                let mut prop = properties.write().unwrap();
+                let mut prop = rw_write!(properties);
                 prop.subquote2 = f.value();
                 prop.is_saved = false;
                 sender.send(DrawMessage::RedrawToBuffer).unwrap();
@@ -817,7 +816,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         self.tag.handle(move |f, ev| {
             if ev == enums::Event::KeyUp {
-                let mut prop = properties.write().unwrap();
+                let mut prop = rw_write!(properties);
                 prop.tag = f.value();
                 prop.is_saved = false;
                 sender.send(DrawMessage::RedrawToBuffer).unwrap();
@@ -833,7 +832,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         self.tag2.handle(move |f, ev| {
             if ev == enums::Event::KeyUp {
-                let mut prop = properties.write().unwrap();
+                let mut prop = rw_write!(properties);
                 prop.tag2 = f.value();
                 prop.is_saved = false;
                 sender.send(DrawMessage::RedrawToBuffer).unwrap();
@@ -849,7 +848,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         let mut quote_position_slider = self.quote_position_slider.clone();
         self.quote_position.set_callback(move |f| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             prop.quote_position = f.value();
             quote_position_slider.set_value(f.value());
             prop.is_saved = false;
@@ -864,7 +863,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         let mut quote_position = self.quote_position.clone();
         self.quote_position_slider.set_callback(move |f| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             prop.quote_position = f.value();
             quote_position.set_value(f.value());
             prop.is_saved = false;
@@ -879,7 +878,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         let mut subquote_position_slider = self.subquote_position_slider.clone();
         self.subquote_position.set_callback(move |f| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             prop.subquote_position = f.value();
             subquote_position_slider.set_value(f.value());
             prop.is_saved = false;
@@ -894,7 +893,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         let mut subquote_position = self.subquote_position.clone();
         self.subquote_position_slider.set_callback(move |f| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             prop.subquote_position = f.value();
             subquote_position.set_value(f.value());
             prop.is_saved = false;
@@ -909,7 +908,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         let mut subquote2_position_slider = self.subquote2_position_slider.clone();
         self.subquote2_position.set_callback(move |f| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             prop.subquote2_position = f.value();
             subquote2_position_slider.set_value(f.value());
             prop.is_saved = false;
@@ -924,7 +923,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         let mut subquote2_position = self.subquote2_position.clone();
         self.subquote2_position_slider.set_callback(move |f| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             prop.subquote2_position = f.value();
             subquote2_position.set_value(f.value());
             prop.is_saved = false;
@@ -939,7 +938,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         let mut tag_position_slider = self.tag_position_slider.clone();
         self.tag_position.set_callback(move |f| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             prop.tag_position = f.value();
             tag_position_slider.set_value(f.value());
             prop.is_saved = false;
@@ -954,7 +953,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         let mut tag_position = self.tag_position.clone();
         self.tag_position_slider.set_callback(move |f| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             prop.tag_position = f.value();
             tag_position.set_value(f.value());
             prop.is_saved = false;
@@ -969,7 +968,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         let mut tag2_position_slider = self.tag2_position_slider.clone();
         self.tag2_position.set_callback(move |f| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             prop.tag2_position = f.value();
             tag2_position_slider.set_value(f.value());
             prop.is_saved = false;
@@ -984,7 +983,7 @@ impl MainWindow {
         let sender = self.sender.clone();
         let mut tag2_position = self.tag2_position.clone();
         self.tag2_position_slider.set_callback(move |f| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             prop.tag2_position = f.value();
             tag2_position.set_value(f.value());
             prop.is_saved = false;
@@ -998,7 +997,7 @@ impl MainWindow {
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
         self.translucent_layer_rgb.set_callback(move |mut f| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             let (r, g, b) = dialog::color_chooser_with_default(
                 "Pick a colour",
                 dialog::ColorMode::Byte,
@@ -1022,7 +1021,7 @@ impl MainWindow {
         let properties = Arc::clone(&self.properties);
         let sender = self.sender.clone();
         self.translucent_layer_alpha.set_callback(move |f| {
-            let mut prop = properties.write().unwrap();
+            let mut prop = rw_write!(properties);
             prop.translucent_layer_color[3] = f.value() as u8;
             prop.is_saved = false;
             sender.send(DrawMessage::RedrawToBuffer).unwrap();
@@ -1045,7 +1044,7 @@ fn load_dir(
         .collect::<Vec<fs::DirEntry>>();
     files.sort_by_key(|i| i.file_name());
     let mut text = String::new();
-    let mut imgs_b = imgs.write().unwrap();
+    let mut imgs_b = rw_write!(imgs);
     *imgs_b = vec![];
     for file in files {
         let path = file.path();
