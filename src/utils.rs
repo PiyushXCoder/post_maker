@@ -118,6 +118,12 @@ impl ImageContainer {
         let img = load_image(&image_info);
         let (width, height): (f64, f64) = Coord::from(img.dimensions()).into();
 
+        let (crop_width, _) = croped_ratio(width, height);
+        println!("{} {}", crop_width, globals::CONFIG.read().unwrap().minimum_width_limit);
+        if crop_width < globals::CONFIG.read().unwrap().minimum_width_limit {
+            show_alert("Image width is below limit");
+        }
+
         let config = globals::CONFIG.read().unwrap();
         let mut prop = properties.write().unwrap();
         prop.image_info = Some(image_info.to_owned());
@@ -154,10 +160,6 @@ impl ImageContainer {
         let (origina_crop_width, origina_crop_height) =
             croped_ratio(original_width, original_height);
 
-        if origina_crop_width < globals::CONFIG.read().unwrap().minimum_width_limit {
-            show_alert("Image width is below limit");
-        }
-
         prop.crop_position = Some((
             (original_width - origina_crop_width) / 2.0,
             (original_height - origina_crop_height) / 2.0,
@@ -182,10 +184,6 @@ impl ImageContainer {
 
         let (s_width, s_height): (f64, f64) = Coord::from(self.image.dimensions()).into();
         let (c_width, c_height) = croped_ratio(s_width, s_height);
-
-        if c_width < globals::CONFIG.read().unwrap().minimum_width_limit {
-            show_alert("Image width is below limit");
-        }
 
         let (cx, cy) = (
             (original_x * s_width) / original_width,
