@@ -24,7 +24,7 @@ use crate::{
 use fltk::{
     app,
     button::Button,
-    dialog, enums,
+    enums,
     frame::Frame,
     input::{Input, MultilineInput},
     menu,
@@ -274,14 +274,9 @@ fn load_image(
         let read = match serde_json::from_str::<ImagePropertiesFile>(&read) {
             Ok(r) => r,
             Err(e) => {
-                warn!("Config is corrupt\n{:?}", e);
-                match dialog::choice_default("Config is corrupt, fix??", "yes", "no", "") {
-                    1 => {
-                        fs::remove_file(&properties_file).warn_log("Failed to delete image properties file!");
-                        ImagePropertiesFile::default()
-                    }
-                    _ => return,
-                }
+                Result::<(),_>::Err(e).warn_log("Config is corrupt");
+                fs::remove_file(&properties_file).warn_log("Failed to delete image properties file!");
+                ImagePropertiesFile::default()
             }
         };
 
@@ -377,7 +372,7 @@ fn show_images_details(images_list: Arc<RwLock<Vec<ImageInfo>>>) {
         }
     }
 
-    dialog::message_default(&format!("With Quote: {}\nWithout Quote: {}", image_with_quote, image_without_quote));
+    utils::show_message(&format!("With Quote: {}\nWithout Quote: {}", image_with_quote, image_without_quote));
 }
 
 /// Flush the Buffer from image container to drawing buffer for fltk

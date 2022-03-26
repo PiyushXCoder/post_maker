@@ -728,3 +728,17 @@ pub(crate) fn tag_from_height(height: f64) -> f64 {
 pub(crate) fn tag2_from_height(height: f64) -> f64 {
     (height * globals::CONFIG.read().unwrap().tag2_font_ratio) / 5000.0
 }
+
+pub(crate) fn show_message(msg: &str) {
+    let a = globals::MAIN_SENDER.read().unwrap();
+    if let Some(a) = &*a {
+        a.send(crate::AppMessage::Message(msg.to_owned()));
+    }
+}
+
+pub(crate) fn show_alert(msg: &str) {
+    let a = globals::MAIN_SENDER.read().unwrap();
+    if let Some(a) = &*a {
+        a.send(crate::AppMessage::Alert(msg.to_owned()));
+    }
+}

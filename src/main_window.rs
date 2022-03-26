@@ -23,7 +23,6 @@ use crate::utils::ImageType;
 use crate::utils::ImageProperties;
 use crate::{config_window::ConfigWindow, globals};
 use fltk::{
-    app,
     button::Button,
     dialog,
     dialog::NativeFileChooser,
@@ -101,7 +100,7 @@ pub(crate) struct Page {
 
 impl MainWindow {
     pub(crate) fn new(
-        sender: app::Sender<crate::AppMessage>,
+        // sender: app::Sender<crate::AppMessage>,
         draw_buff: Arc<RwLock<Option<Vec<u8>>>>,
     ) -> Self {
         let mut win = Window::new(0, 0, 1100, 700, "Post Maker").center_screen();
@@ -394,7 +393,11 @@ impl MainWindow {
             },
             sender: rx,
         };
-        spawn_image_thread(tx, sender, Arc::clone(&properties), &main_win);
+
+        let a = globals::MAIN_SENDER.read().unwrap();
+        if let Some(a) = &*a {
+            spawn_image_thread(tx, a.to_owned(), Arc::clone(&properties), &main_win);
+        }
         main_win.menu();
         main_win.draw();
         main_win.events();

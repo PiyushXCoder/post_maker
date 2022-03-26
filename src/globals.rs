@@ -29,6 +29,9 @@ lazy_static! {
     pub(crate) static ref CONFIG: RwLock<config::ConfigFile> =
         RwLock::new(config::ConfigFile::load());
 
+    /// Main Sender 
+    pub(crate) static ref MAIN_SENDER: RwLock<Option<fltk::app::Sender<crate::AppMessage>>> = RwLock::new(None);
+
     /// TTF Font for Quote
     pub(crate) static ref FONT_QUOTE: Font<'static> = {
         let mut buffer = Vec::new();

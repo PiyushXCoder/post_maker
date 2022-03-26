@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::panic::Location;
-use fltk::dialog;
+
+use crate::utils;
 
 pub trait ResultExt<T, E> {
     fn expect_log(self, msg: &str) -> T;
@@ -14,7 +15,7 @@ impl<T, E: Debug> ResultExt<T, E> for Result<T, E> {
         match self {
             Ok(v) => v,
             Err(e) => {
-                dialog::alert_default(msg);
+                utils::show_alert(msg);
                 error!("{}\n{:?}\n{}", msg, e, Location::caller());
                 std::process::exit(1);
             }
@@ -24,7 +25,7 @@ impl<T, E: Debug> ResultExt<T, E> for Result<T, E> {
     #[track_caller]
     fn error_log(&self, msg: &str) {
         if let Err(e) = self {
-            dialog::alert_default(msg);
+            utils::show_alert(msg);
             error!("{}\n{:?}\n{}", msg, e, Location::caller());
         }
     }
@@ -32,7 +33,7 @@ impl<T, E: Debug> ResultExt<T, E> for Result<T, E> {
     #[track_caller]
     fn warn_log(&self, msg: &str) {
         if let Err(e) = self {
-            dialog::alert_default(msg);
+            utils::show_alert(msg);
             warn!("{}\n{:?}", msg, e);
         }
     }

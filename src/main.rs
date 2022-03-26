@@ -42,6 +42,8 @@ use std::sync::{Arc, RwLock};
 pub(crate) enum AppMessage {
     /// Copy recived image buffer from draw_thread to Buffer for fltk frame
     RedrawMainWindowImage(Option<Vec<u8>>),
+    Message(String),
+    Alert(String)
 }
 
 fn main() {
@@ -67,7 +69,8 @@ fn main() {
     let draw_buff: Arc<RwLock<Option<Vec<u8>>>> = Arc::new(RwLock::new(None));
 
     let (main_sender, main_receiver) = channel::<AppMessage>();
-    let mut main_window = MainWindow::new(main_sender, Arc::clone(&draw_buff));
+    *globals::MAIN_SENDER.write().unwrap() = Some(main_sender);
+    let mut main_window = MainWindow::new(Arc::clone(&draw_buff));
 
     while app.wait() {
         if let Some(msg) = main_receiver.recv() {
@@ -76,6 +79,12 @@ fn main() {
                     let mut buff = draw_buff.write().unwrap();
                     *buff = data;
                     main_window.win.redraw();
+                }
+                AppMessage::Message(msg) => {
+                    dialog::message_default(&msg);
+                }
+                AppMessage::Alert(msg) => {
+                    dialog::alert_default(&msg)
                 }
             }
         }
