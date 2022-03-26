@@ -153,6 +153,11 @@ impl ImageContainer {
         let (original_width, original_height) = prop.original_dimension;
         let (origina_crop_width, origina_crop_height) =
             croped_ratio(original_width, original_height);
+
+        if origina_crop_width < 700.0 {
+            show_alert("Image width is below 600px");
+        }
+
         prop.crop_position = Some((
             (original_width - origina_crop_width) / 2.0,
             (original_height - origina_crop_height) / 2.0,
@@ -238,6 +243,11 @@ impl ImageContainer {
             crop_width as u32,
             crop_height as u32,
         );
+
+        if crop_width > 1080.0 {
+            let (resize_width,resize_height) = (1080.0, height_from_width(1080.0));
+            img = original_image.resize_exact(resize_width as u32,resize_height as u32, image::imageops::FilterType::Lanczos3);
+        }
 
         draw_layer_and_text(
             &mut img,
