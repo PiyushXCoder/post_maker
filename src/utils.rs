@@ -118,12 +118,6 @@ impl ImageContainer {
         let img = load_image(&image_info);
         let (width, height): (f64, f64) = Coord::from(img.dimensions()).into();
 
-        let (crop_width, _) = croped_ratio(width, height);
-        println!("{} {}", crop_width, globals::CONFIG.read().unwrap().minimum_width_limit);
-        if crop_width < globals::CONFIG.read().unwrap().minimum_width_limit {
-            show_alert("Image width is below limit");
-        }
-
         let config = globals::CONFIG.read().unwrap();
         let mut prop = properties.write().unwrap();
         prop.image_info = Some(image_info.to_owned());
@@ -694,6 +688,16 @@ pub(crate) fn set_color_btn_rgba(rgba: [u8; 4], btn: &mut Button) {
         r = 1;
     }
     btn.set_color(enums::Color::from_rgb(r, g, b));
+}
+
+/// Check if image is too small
+pub(crate) fn is_too_small(width: f64, height: f64) -> bool {
+    let (crop_width, _) = croped_ratio(width, height);
+    if crop_width < globals::CONFIG.read().unwrap().minimum_width_limit {
+        true
+    } else {
+        false
+    }
 }
 
 /// Get required size to crop image as per image ratio

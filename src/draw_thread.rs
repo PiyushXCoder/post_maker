@@ -14,6 +14,7 @@
 
 //! Thread to manage drawing in background
 
+use crate::globals;
 use crate::result_ext::ResultExt;
 use crate::utils::{ImageContainer, ImageProperties, ImageInfo};
 use crate::{
@@ -54,7 +55,9 @@ pub(crate) enum DrawMessage {
     /// Delete file
     Delete,
     /// Show details about images linke count of quotes
-    ShowImagesDetails
+    ShowImagesDetails,
+    /// Check If image is proper
+    CheckImage
 }
 
 /// Spawn thread to manage all actions related to image, like: edit, save, delete
@@ -221,6 +224,15 @@ pub(crate) fn spawn_image_thread(
                 }
                 DrawMessage::ShowImagesDetails => {
                     show_images_details(Arc::clone(&images_list))
+                }
+                DrawMessage::CheckImage => {
+                    let (width, height) = properties.read().unwrap().original_dimension;
+                    if utils::is_too_small(width, height) {
+                        let a = globals::MAIN_SENDER.read().unwrap();
+                        if let Some(a) = &*a {
+                            a.send(crate::AppMessage::DeleteImage);
+                        }
+                    }
                 }
             }
         }

@@ -15,12 +15,13 @@
 //! Window to edit configuration
 
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use crate::dialog;
 
 use fltk::{
     app,
     browser::{Browser, BrowserType},
     button::{Button, RadioRoundButton},
-    dialog::{self, FileDialogOptions, NativeFileChooser},
+    dialog::{FileDialogOptions, NativeFileChooser},
     enums::{self, Align, Event, Font},
     frame::Frame,
     group::{Flex, Scroll},
@@ -683,7 +684,7 @@ impl ConfigWindow {
         let configs = Rc::clone(&self.configs);
         let selected_browse_line = Rc::clone(&self.selected_browse_line);
         self.del_config_btn.set_callback(move |_| {
-            let ch = dialog::choice_default("Do you want to delete??", "Yes", "No", "");
+            let ch = dialog::choice_default("Do you want to delete??", "Yes", "No");
             if ch == 1 {
                 return;
             }

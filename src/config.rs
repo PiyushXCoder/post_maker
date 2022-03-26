@@ -15,7 +15,7 @@
 //! load, save configuration and parse cli args
 use crate::{config_picker::ConfigPicker, globals, result_ext::ResultExt, utils::ImageType};
 use clap::{ArgEnum, Parser};
-use fltk::dialog;
+use crate::dialog;
 use fltk_theme::ThemeType;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};

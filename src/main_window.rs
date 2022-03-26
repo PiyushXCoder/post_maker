@@ -22,9 +22,9 @@ use crate::utils::ImageInfo;
 use crate::utils::ImageType;
 use crate::utils::ImageProperties;
 use crate::{config_window::ConfigWindow, globals};
+use crate::dialog;
 use fltk::{
     button::Button,
-    dialog,
     dialog::NativeFileChooser,
     draw as dr, enums,
     enums::Shortcut,
@@ -651,10 +651,11 @@ impl MainWindow {
         let mut file_choice = self.file_choice.clone();
         let sender = self.sender.clone();
         self.clone_btn.set_callback(move |_| {
-            let ch = dialog::choice_default("Do you want to clone??", "Yes", "No", "");
+            let ch = dialog::choice_default("Do you want to clone??", "Yes", "No");
             if ch == 0 {
                 sender.send(DrawMessage::Clone).unwrap();
                 sender.send(DrawMessage::Open).unwrap();
+                sender.send(DrawMessage::CheckImage).unwrap();
                 image.redraw();
                 file_choice.redraw();
             }
@@ -665,10 +666,11 @@ impl MainWindow {
         let mut file_choice = self.file_choice.clone();
         let sender = self.sender.clone();
         self.delete_btn.set_callback(move |_| {
-            let ch = dialog::choice_default("Do you want to delete??", "Yes", "No", "");
+            let ch = dialog::choice_default("Do you want to delete??", "Yes", "No");
             if ch == 0 {
                 sender.send(DrawMessage::Delete).unwrap();
                 sender.send(DrawMessage::Open).unwrap();
+                sender.send(DrawMessage::CheckImage).unwrap();
                 image.redraw();
                 file_choice.redraw();
             }
@@ -709,6 +711,7 @@ impl MainWindow {
                 file_choice.set_value(file_choice.value() + 1);
             }
             sender.send(DrawMessage::Open).unwrap();
+            sender.send(DrawMessage::CheckImage).unwrap();
         });
 
         // Back Image Button
@@ -732,6 +735,7 @@ impl MainWindow {
                 file_choice.set_value(file_choice.value() - 1);
             }
             sender.send(DrawMessage::Open).unwrap();
+            sender.send(DrawMessage::CheckImage).unwrap();
         });
 
         // File Choice
@@ -748,6 +752,7 @@ impl MainWindow {
                 }
             }
             sender.send(DrawMessage::Open).unwrap();
+            sender.send(DrawMessage::CheckImage).unwrap();
         });
 
         // Quote Input
@@ -1054,4 +1059,5 @@ fn load_dir(
     file_choice.add_choice(&text[1..]);
     file_choice.set_value(0);
     sender.send(DrawMessage::Open).unwrap();
+    sender.send(DrawMessage::CheckImage).unwrap();
 }

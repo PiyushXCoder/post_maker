@@ -17,6 +17,7 @@
 extern crate log;
 extern crate simplelog;
 
+mod dialog;
 mod about_window;
 mod config;
 mod config_picker;
@@ -30,7 +31,7 @@ mod result_ext;
 
 use fltk::{
     app::{channel, App},
-    dialog,
+    // dialog,
     prelude::*,
 };
 use fltk_theme::WidgetTheme;
@@ -43,7 +44,10 @@ pub(crate) enum AppMessage {
     /// Copy recived image buffer from draw_thread to Buffer for fltk frame
     RedrawMainWindowImage(Option<Vec<u8>>),
     Message(String),
-    Alert(String)
+    Alert(String),
+
+    // Only for Main windows
+    DeleteImage
 }
 
 fn main() {
@@ -85,6 +89,15 @@ fn main() {
                 }
                 AppMessage::Alert(msg) => {
                     dialog::alert_default(&msg)
+                }
+                AppMessage::DeleteImage => {
+                    let ch = dialog::choice_default("Image is too small", "Delete", "Keep");
+                    if ch == 0 {
+                        main_window.sender.send(draw_thread::DrawMessage::Delete).unwrap();
+                        main_window.sender.send(draw_thread::DrawMessage::Open).unwrap();
+                        main_window.page.image.redraw();
+                        main_window.file_choice.redraw();
+                    }
                 }
             }
         }
