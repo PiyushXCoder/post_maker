@@ -268,7 +268,7 @@ fn load_image(
     *container = Some(ImageContainer::new(&image_info, Arc::clone(&properties)));
 
     if let Some(cont) = container {
-        let properties_file = utils::get_properties_file(&image_info);
+        let properties_file = utils::get_properties_path(&image_info);
 
         let read = fs::read_to_string(&properties_file).unwrap_or("{}".to_owned());
         let read = match serde_json::from_str::<ImagePropertiesFile>(&read) {
@@ -355,7 +355,7 @@ fn show_images_details(images_list: Arc<RwLock<Vec<ImageInfo>>>) {
 
     let list = images_list.read().unwrap();
     for image_info in list.iter() {
-        let properties_file = utils::get_properties_file(&image_info);
+        let properties_file = utils::get_properties_path(&image_info);
 
         let read = fs::read_to_string(&properties_file).unwrap_or("{}".to_owned());
         let read = match serde_json::from_str::<ImagePropertiesFile>(&read) {

@@ -218,16 +218,12 @@ impl ImageContainer {
     pub(crate) fn save(&self) {
         let prop = self.properties.read().unwrap();
         let image_info = &prop.image_info;
-        let (path_original, path_properties, mut original_image) = match image_info {
-            Some(p) => (Path::new(&p.path), get_properties_file(p), load_image(p)),
+        let (export_path, path_properties, mut original_image) = match image_info {
+            Some(p) => (get_export_image_path(p), get_properties_path(p), load_image(p)),
             None => return,
         };
         let config = globals::CONFIG.read().unwrap();
         let export_format = &config.image_format;
-        let mut export = path_original.parent().unwrap().join("export")
-            .join(format!("{}-{}", path_original.file_stem().unwrap_or_default().to_string_lossy(), 
-            path_original.extension().unwrap_or_default().to_string_lossy()));
-        export.set_extension(export_format.as_extension());
 
         let mut prop = prop.clone();
         prop.image_info = None;
@@ -259,7 +255,7 @@ impl ImageContainer {
             prop.original_dimension.1,
         );
 
-        let mut output = match File::create(&export) {
+        let mut output = match File::create(&export_path) {
             Ok(a) => a,
             Err(e) => {
                 Result::<(), _>::Err(e).warn_log("Failed to write to disk!");
@@ -295,7 +291,7 @@ impl ImageContainer {
                 comp.finish_compress();
 
                 match comp.data_to_vec() {
-                    Ok(data) => std::fs::write(&export, data).warn_log("Failed to export Image!"),
+                    Ok(data) => std::fs::write(&export_path, data).warn_log("Failed to export Image!"),
                     Err(e) => Result::<(), _>::Err(e).warn_log("Failed to encode image!")
                 }
             }
@@ -318,8 +314,8 @@ impl ImageContainer {
                     i += 1;
                 }
 
-                let path_properties = get_properties_file(&image_info);
-                let path_properties_new = get_properties_file(&new_image_info);
+                let path_properties = get_properties_path(&image_info);
+                let path_properties_new = get_properties_path(&new_image_info);
 
                 if image_info.path.exists() {
                     fs::copy(&image_info.path, &new_image_info.path).warn_log("Failed to clone image!");
@@ -336,22 +332,12 @@ impl ImageContainer {
 
     pub(crate) fn delete(&self) {
         let prop = self.properties.read().unwrap();
-        let config = globals::CONFIG.read().unwrap();
-        let export_format = config.image_format.as_extension();
 
         let image_info = &prop.image_info;
-        let (path_image, path_properties) = match image_info {
-            Some(p) => (Path::new(&p.path), get_properties_file(p)),
+        let (export_path, path_image, path_properties) = match image_info {
+            Some(p) => (get_export_image_path(p), Path::new(&p.path), get_properties_path(p)),
             None => return,
         };
-        let export = path_image.parent().unwrap().join("export").join(
-            path_image
-                .with_extension(export_format)
-                .file_name()
-                .unwrap()
-                .to_str()
-                .unwrap(),
-        );
 
         if path_image.exists() {
             fs::remove_file(path_image).warn_log("Failed to delete image!");
@@ -361,8 +347,8 @@ impl ImageContainer {
             fs::remove_file(path_properties).warn_log("Failed to delete image properties!");
         }
 
-        if export.exists() {
-            fs::remove_file(export).warn_log("Failed to delete exported image!");
+        if export_path.exists() {
+            fs::remove_file(export_path).warn_log("Failed to delete exported image!");
         }
     }
 }
@@ -651,7 +637,7 @@ pub(crate) fn measure_line(
 }
 
 /// path of properties files
-pub(crate) fn get_properties_file(image_info: &ImageInfo) -> PathBuf {
+pub(crate) fn get_properties_path(image_info: &ImageInfo) -> PathBuf {
     let img = &image_info.path;
     let stem = String::from(img.file_stem().unwrap_or_default().to_string_lossy());
     let extension = String::from(img.extension().unwrap_or_default().to_string_lossy());
@@ -677,6 +663,16 @@ pub(crate) fn get_properties_file(image_info: &ImageInfo) -> PathBuf {
     default_path
 }
 
+/// path of properties files
+pub(crate) fn get_export_image_path(image_info: &ImageInfo) -> PathBuf {
+    let config = globals::CONFIG.read().unwrap();
+    let export_format = &config.image_format;
+    let mut export = image_info.path.parent().unwrap().join("export")
+        .join(format!("{}-{}", image_info.path.file_stem().unwrap_or_default().to_string_lossy(), 
+        image_info.path.extension().unwrap_or_default().to_string_lossy()));
+    export.set_extension(export_format.as_extension());
+    export
+}
 
 /// small hack because 0,0,0 rgb, because can't be set on fltk theme
 pub(crate) fn set_color_btn_rgba(rgba: [u8; 4], btn: &mut Button) {
