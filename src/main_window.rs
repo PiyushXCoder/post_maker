@@ -102,10 +102,7 @@ pub(crate) struct Page {
 }
 
 impl MainWindow {
-    pub(crate) fn new(
-        // sender: app::Sender<crate::AppMessage>,
-        draw_buff: Arc<RwLock<Option<Vec<u8>>>>,
-    ) -> Self {
+    pub(crate) fn new(draw_buff: Arc<RwLock<Option<Vec<u8>>>>) -> Self {
         let mut win = Window::new(0, 0, 1100, 700, "Post Maker").center_screen();
         win.set_icon(Some(
             SvgImage::from_data(globals::ICON.to_str().unwrap()).unwrap(),
@@ -451,7 +448,7 @@ impl MainWindow {
             move |_| {
                 let mut prop = rw_write!(properties);
                 prop.is_saved = true;
-                sender.send(DrawMessage::Save).unwrap();
+                sender.send_it(DrawMessage::Save);
             },
         );
 
@@ -461,7 +458,7 @@ impl MainWindow {
             Shortcut::None,
             menu::MenuFlag::Normal,
             move |_| {
-                sender.send(DrawMessage::ShowImagesDetails).unwrap();
+                sender.send_it(DrawMessage::ShowImagesDetails);
             },
         );
 
@@ -474,8 +471,8 @@ impl MainWindow {
             menu::MenuFlag::Normal,
             move |_| {
                 if config_window.show() {
-                    sender.send(DrawMessage::RedrawToBuffer).unwrap();
-                    sender.send(DrawMessage::Flush).unwrap();
+                    sender.send_it(DrawMessage::RedrawToBuffer);
+                    sender.send_it(DrawMessage::Flush);
                     image.redraw();
                 }
             },
@@ -539,8 +536,8 @@ impl MainWindow {
             prop.is_saved = false;
             utils::set_color_btn_rgba(color, &mut layer_rgb);
             layer_alpha.set_value(color[3] as f64);
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -559,8 +556,8 @@ impl MainWindow {
             quote_position.set_value(pos);
             quote_position_slider.set_value(pos);
 
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -579,8 +576,8 @@ impl MainWindow {
             subquote_position.set_value(pos);
             subquote_position_slider.set_value(pos);
 
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -599,8 +596,8 @@ impl MainWindow {
             subquote2_position.set_value(pos);
             subquote2_position_slider.set_value(pos);
 
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -619,8 +616,8 @@ impl MainWindow {
             tag_position.set_value(pos);
             tag_position_slider.set_value(pos);
 
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -639,8 +636,8 @@ impl MainWindow {
             tag2_position.set_value(pos);
             tag2_position_slider.set_value(pos);
 
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -650,7 +647,7 @@ impl MainWindow {
         self.save_btn.set_callback(move |_| {
             let mut prop = rw_write!(properties);
             prop.is_saved = true;
-            sender.send(DrawMessage::Save).unwrap()
+            sender.send_it(DrawMessage::Save);
         });
 
         // Clone Button
@@ -660,9 +657,9 @@ impl MainWindow {
         self.clone_btn.set_callback(move |_| {
             let ch = dialog::choice_default("Do you want to clone??", "Yes", "No");
             if ch == 0 {
-                sender.send(DrawMessage::Clone).unwrap();
-                sender.send(DrawMessage::Open).unwrap();
-                sender.send(DrawMessage::CheckImage).unwrap();
+                sender.send_it(DrawMessage::Clone);
+                sender.send_it(DrawMessage::Open);
+                sender.send_it(DrawMessage::CheckImage);
                 image.redraw();
                 file_choice.redraw();
             }
@@ -675,9 +672,9 @@ impl MainWindow {
         self.delete_btn.set_callback(move |_| {
             let ch = dialog::choice_default("Do you want to delete??", "Yes", "No");
             if ch == 0 {
-                sender.send(DrawMessage::Delete).unwrap();
-                sender.send(DrawMessage::Open).unwrap();
-                sender.send(DrawMessage::CheckImage).unwrap();
+                sender.send_it(DrawMessage::Delete);
+                sender.send_it(DrawMessage::Open);
+                sender.send_it(DrawMessage::CheckImage);
                 image.redraw();
                 file_choice.redraw();
             }
@@ -691,7 +688,7 @@ impl MainWindow {
             let mut prop = rw_write!(properties);
             if let Some(image_info) = &prop.image_info {
                 if let Some((x, y)) = crop_win.load_to_crop(&image_info, prop.crop_position) {
-                    sender.send(DrawMessage::ChangeCrop((x, y))).unwrap();
+                    sender.send_it(DrawMessage::ChangeCrop((x, y)));
                     prop.is_saved = false;
                 }
             }
@@ -706,7 +703,7 @@ impl MainWindow {
             if !prop.is_saved {
                 let save = fltk::dialog::choice_default("Save?", "yes", "no", "cancel");
                 match save {
-                    0 => sender.send(DrawMessage::Save).unwrap(),
+                    0 => sender.send_it(DrawMessage::Save),
                     1 => {}
                     _ => return,
                 }
@@ -717,8 +714,8 @@ impl MainWindow {
             } else {
                 file_choice.set_value(file_choice.value() + 1);
             }
-            sender.send(DrawMessage::Open).unwrap();
-            sender.send(DrawMessage::CheckImage).unwrap();
+            sender.send_it(DrawMessage::Open);
+            sender.send_it(DrawMessage::CheckImage);
         });
 
         // Back Image Button
@@ -730,7 +727,7 @@ impl MainWindow {
             if !prop.is_saved {
                 let save = fltk::dialog::choice_default("Save?", "yes", "no", "cancel");
                 match save {
-                    0 => sender.send(DrawMessage::Save).unwrap(),
+                    0 => sender.send_it(DrawMessage::Save),
                     1 => {}
                     _ => return,
                 }
@@ -741,8 +738,8 @@ impl MainWindow {
             } else {
                 file_choice.set_value(file_choice.value() - 1);
             }
-            sender.send(DrawMessage::Open).unwrap();
-            sender.send(DrawMessage::CheckImage).unwrap();
+            sender.send_it(DrawMessage::Open);
+            sender.send_it(DrawMessage::CheckImage);
         });
 
         // File Choice
@@ -753,13 +750,13 @@ impl MainWindow {
             if !prop.is_saved {
                 let save = fltk::dialog::choice_default("Save?", "yes", "no", "cancel");
                 match save {
-                    0 => sender.send(DrawMessage::Save).unwrap(),
+                    0 => sender.send_it(DrawMessage::Save),
                     1 => {}
                     _ => return,
                 }
             }
-            sender.send(DrawMessage::Open).unwrap();
-            sender.send(DrawMessage::CheckImage).unwrap();
+            sender.send_it(DrawMessage::Open);
+            sender.send_it(DrawMessage::CheckImage);
         });
 
         // Quote Input
@@ -771,8 +768,8 @@ impl MainWindow {
                 let mut prop = rw_write!(properties);
                 prop.quote = f.value();
                 prop.is_saved = false;
-                sender.send(DrawMessage::RedrawToBuffer).unwrap();
-                sender.send(DrawMessage::Flush).unwrap();
+                sender.send_it(DrawMessage::RedrawToBuffer);
+                sender.send_it(DrawMessage::Flush);
                 image.redraw();
             }
             true
@@ -787,8 +784,8 @@ impl MainWindow {
                 let mut prop = rw_write!(properties);
                 prop.subquote = f.value();
                 prop.is_saved = false;
-                sender.send(DrawMessage::RedrawToBuffer).unwrap();
-                sender.send(DrawMessage::Flush).unwrap();
+                sender.send_it(DrawMessage::RedrawToBuffer);
+                sender.send_it(DrawMessage::Flush);
                 image.redraw();
             }
             true
@@ -803,8 +800,8 @@ impl MainWindow {
                 let mut prop = rw_write!(properties);
                 prop.subquote2 = f.value();
                 prop.is_saved = false;
-                sender.send(DrawMessage::RedrawToBuffer).unwrap();
-                sender.send(DrawMessage::Flush).unwrap();
+                sender.send_it(DrawMessage::RedrawToBuffer);
+                sender.send_it(DrawMessage::Flush);
                 image.redraw();
             }
             true
@@ -819,8 +816,8 @@ impl MainWindow {
                 let mut prop = rw_write!(properties);
                 prop.tag = f.value();
                 prop.is_saved = false;
-                sender.send(DrawMessage::RedrawToBuffer).unwrap();
-                sender.send(DrawMessage::Flush).unwrap();
+                sender.send_it(DrawMessage::RedrawToBuffer);
+                sender.send_it(DrawMessage::Flush);
                 image.redraw();
             }
             true
@@ -835,8 +832,8 @@ impl MainWindow {
                 let mut prop = rw_write!(properties);
                 prop.tag2 = f.value();
                 prop.is_saved = false;
-                sender.send(DrawMessage::RedrawToBuffer).unwrap();
-                sender.send(DrawMessage::Flush).unwrap();
+                sender.send_it(DrawMessage::RedrawToBuffer);
+                sender.send_it(DrawMessage::Flush);
                 image.redraw();
             }
             true
@@ -852,8 +849,8 @@ impl MainWindow {
             prop.quote_position = f.value();
             quote_position_slider.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -867,8 +864,8 @@ impl MainWindow {
             prop.quote_position = f.value();
             quote_position.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -882,8 +879,8 @@ impl MainWindow {
             prop.subquote_position = f.value();
             subquote_position_slider.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -897,8 +894,8 @@ impl MainWindow {
             prop.subquote_position = f.value();
             subquote_position.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -912,8 +909,8 @@ impl MainWindow {
             prop.subquote2_position = f.value();
             subquote2_position_slider.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -927,8 +924,8 @@ impl MainWindow {
             prop.subquote2_position = f.value();
             subquote2_position.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -942,8 +939,8 @@ impl MainWindow {
             prop.tag_position = f.value();
             tag_position_slider.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -957,8 +954,8 @@ impl MainWindow {
             prop.tag_position = f.value();
             tag_position.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -972,8 +969,8 @@ impl MainWindow {
             prop.tag2_position = f.value();
             tag2_position_slider.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -987,8 +984,8 @@ impl MainWindow {
             prop.tag2_position = f.value();
             tag2_position.set_value(f.value());
             prop.is_saved = false;
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -1011,8 +1008,8 @@ impl MainWindow {
             utils::set_color_btn_rgba(prop.translucent_layer_color, &mut f);
             f.redraw();
             prop.is_saved = false;
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
 
@@ -1024,8 +1021,8 @@ impl MainWindow {
             let mut prop = rw_write!(properties);
             prop.translucent_layer_color[3] = f.value() as u8;
             prop.is_saved = false;
-            sender.send(DrawMessage::RedrawToBuffer).unwrap();
-            sender.send(DrawMessage::Flush).unwrap();
+            sender.send_it(DrawMessage::RedrawToBuffer);
+            sender.send_it(DrawMessage::Flush);
             image.redraw();
         });
     }
@@ -1068,6 +1065,16 @@ fn load_dir(
     file_choice.clear();
     file_choice.add_choice(&text[1..]);
     file_choice.set_value(0);
-    sender.send(DrawMessage::Open).unwrap();
-    sender.send(DrawMessage::CheckImage).unwrap();
+    sender.send_it(DrawMessage::Open);
+    sender.send_it(DrawMessage::CheckImage);
+}
+
+trait SenderExt {
+    fn send_it(&self, a: DrawMessage);
+}
+
+impl SenderExt for mpsc::Sender<DrawMessage> {
+    fn send_it(&self, a: DrawMessage) {
+        self.send(a).expect_log("Program panic!");
+    }
 }
