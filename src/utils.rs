@@ -513,7 +513,7 @@ impl ImageProperties {
 fn load_image(image_info: &ImageInfo) -> DynamicImage {
     let img = match image_info.image_type {
         ImageType::Webp => {
-            let mut f = File::open(&image_info.path).expect_log("Failed to open image!");
+            let mut f = File::open(&image_info.path).expect_log("Failed to load image!");
             let mut buf = vec![];
             f.read_to_end(&mut buf).expect_log("Failed to read image!");
             let a = webp::Decoder::new(&buf)
@@ -523,14 +523,14 @@ fn load_image(image_info: &ImageInfo) -> DynamicImage {
             a.to_image()
         }
         ImageType::Jpeg => {
-            let mut f = File::open(&image_info.path).expect_log("Failed to open image!");
+            let mut f = File::open(&image_info.path).expect_log("Failed to load image!");
             let mut buf = vec![];
             f.read_to_end(&mut buf).expect_log("Failed to read image!");
 
             let d = mozjpeg::Decompress::with_markers(mozjpeg::ALL_MARKERS)
                 .from_mem(&buf)
                 .expect_log("Failed to decompress image!");
-            let mut image = d.rgb().expect_log("Failed to covert to rgb image!");
+            let mut image = d.rgb().expect_log("Failed to convert to rgb image!");
             let pixels = image.read_scanlines_flat().unwrap();
             let image =
                 ImageBuffer::from_raw(image.width() as u32, image.height() as u32, pixels).unwrap();
@@ -538,13 +538,13 @@ fn load_image(image_info: &ImageInfo) -> DynamicImage {
         }
         ImageType::Png => {
             let dec = image::codecs::png::PngDecoder::new(
-                File::open(&image_info.path).expect_log("Failed to open image!"),
+                File::open(&image_info.path).expect_log("Failed to load image!"),
             )
             .expect_log("Failed to decode image!");
-            DynamicImage::from_decoder(dec).expect_log("Failed to open image!")
+            DynamicImage::from_decoder(dec).expect_log("Failed to decode image!")
         }
         ImageType::None => {
-            Result::<(), _>::Err("Failed to open image!").expect_log("");
+            Result::<(), _>::Err("Failed to load image!").expect_log("Unknown format!");
             std::process::exit(1);
         }
     };
@@ -680,11 +680,33 @@ pub(crate) fn measure_line(
 /// path of properties files
 pub(crate) fn get_properties_path(image_info: &ImageInfo) -> PathBuf {
     let img = &image_info.path;
-    let stem = String::from(img.file_stem().unwrap_or_default().to_string_lossy());
-    let extension = String::from(img.extension().unwrap_or_default().to_string_lossy());
 
-    let mut default_path = img.with_file_name(format!("{}-{}", stem, extension));
-    default_path.set_extension("prop");
+    let image_name: String = image_info
+        .path
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .into_owned();
+
+    let mut occurance = 0;
+    let image_name = image_name
+        .chars()
+        .into_iter()
+        .rev()
+        .map(|c| {
+            if occurance == 0 && c == '.' {
+                occurance = 1;
+                '-'
+            } else {
+                c
+            }
+        })
+        .collect::<Vec<char>>()
+        .into_iter()
+        .rev();
+    let image_name = format!("{}.prop", String::from_iter(image_name));
+
+    let default_path = img.with_file_name(&image_name);
 
     if default_path.exists() {
         return default_path;
@@ -706,25 +728,41 @@ pub(crate) fn get_properties_path(image_info: &ImageInfo) -> PathBuf {
 pub(crate) fn get_export_image_path(image_info: &ImageInfo) -> PathBuf {
     let config = rw_read!(globals::CONFIG);
     let export_format = &config.image_format;
-    let mut export = image_info
+    let image_name = image_info
+        .path
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy();
+
+    let mut occurance = 0;
+    let image_name = image_name
+        .chars()
+        .into_iter()
+        .rev()
+        .map(|c| {
+            if occurance == 0 && c == '.' {
+                occurance = 1;
+                '-'
+            } else {
+                c
+            }
+        })
+        .collect::<Vec<char>>()
+        .into_iter()
+        .rev();
+    let image_name = format!(
+        "{}.{}",
+        String::from_iter(image_name),
+        export_format.as_extension()
+    );
+
+    let export = image_info
         .path
         .parent()
         .unwrap()
         .join("export")
-        .join(format!(
-            "{}-{}",
-            image_info
-                .path
-                .file_stem()
-                .unwrap_or_default()
-                .to_string_lossy(),
-            image_info
-                .path
-                .extension()
-                .unwrap_or_default()
-                .to_string_lossy()
-        ));
-    export.set_extension(export_format.as_extension());
+        .join(&image_name);
+
     export
 }
 
@@ -804,5 +842,12 @@ pub(crate) fn show_alert(msg: &str) {
     let a = rw_read!(globals::MAIN_SENDER);
     if let Some(a) = &*a {
         a.send(crate::AppMessage::Alert(msg.to_owned()));
+    }
+}
+
+pub(crate) fn show_program_panic(msg: &str) {
+    let a = rw_read!(globals::MAIN_SENDER);
+    if let Some(a) = &*a {
+        a.send(crate::AppMessage::ProgramPanicMessage(msg.to_owned()));
     }
 }

@@ -14,9 +14,9 @@ impl<T, E: Debug> ResultExt<T, E> for Result<T, E> {
         match self {
             Ok(v) => v,
             Err(e) => {
-                utils::show_alert(msg);
                 error!("{}\n{:?}\n{}", msg, e, Location::caller());
-                std::process::exit(1);
+                utils::show_program_panic(msg);
+                panic!("[panic]");
             }
         }
     }
@@ -24,16 +24,16 @@ impl<T, E: Debug> ResultExt<T, E> for Result<T, E> {
     #[track_caller]
     fn error_log(&self, msg: &str) {
         if let Err(e) = self {
-            utils::show_alert(msg);
             error!("{}\n{:?}\n{}", msg, e, Location::caller());
+            utils::show_alert(msg);
         }
     }
 
     #[track_caller]
     fn warn_log(&self, msg: &str) {
         if let Err(e) = self {
-            utils::show_alert(msg);
             warn!("{}\n{:?}", msg, e);
+            utils::show_alert(msg);
         }
     }
 }

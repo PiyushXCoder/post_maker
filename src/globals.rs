@@ -12,7 +12,7 @@
     along with Post Maker.  If not, see <https://www.gnu.org/licenses/>
 */
 
-use crate::config;
+use crate::{config, result_ext::ResultExt};
 use lazy_static::lazy_static;
 use rusttype::Font;
 use std::{ffi::OsString, io::Read, sync::RwLock};

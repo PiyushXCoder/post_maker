@@ -18,6 +18,7 @@ use crate::{
     config::{self, ConfigFile},
     dialog, globals,
     utils::{self, ImageType},
+    result_ext::ResultExt
 };
 use fltk::{
     app,

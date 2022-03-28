@@ -15,6 +15,7 @@
 //! Window to change Crop properties of image
 use crate::{
     globals,
+    result_ext::ResultExt,
     utils::{self, Coord, ImageContainer, ImageInfo, ImageProperties},
 };
 use fltk::{

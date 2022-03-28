@@ -34,11 +34,11 @@ mod utils;
 
 use fltk::{
     app::{channel, App},
-    // dialog,
     prelude::*,
 };
 use fltk_theme::WidgetTheme;
 use main_window::MainWindow;
+use result_ext::ResultExt;
 use simplelog::*;
 use std::sync::{Arc, RwLock};
 
@@ -48,6 +48,7 @@ pub(crate) enum AppMessage {
     RedrawMainWindowImage(Option<Vec<u8>>),
     Message(String),
     Alert(String),
+    ProgramPanicMessage(String),
 
     // Only for Main windows
     DeleteImage,
@@ -91,6 +92,10 @@ fn main() {
                     dialog::message_default(&msg);
                 }
                 AppMessage::Alert(msg) => dialog::alert_default(&msg),
+                AppMessage::ProgramPanicMessage(msg) => {
+                    dialog::message_default(&msg);
+                    std::process::exit(1);
+                }
                 AppMessage::DeleteImage => {
                     let ch = dialog::choice_default("Image is too small", "Delete", "Keep");
                     if ch == 0 {
