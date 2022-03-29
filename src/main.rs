@@ -27,6 +27,7 @@ mod config_window;
 mod crop_window;
 mod dialog;
 mod draw_thread;
+mod export_all_window;
 mod globals;
 mod main_window;
 mod result_ext;

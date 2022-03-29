@@ -19,6 +19,7 @@ use crate::{
     crop_window::CropWindow,
     dialog,
     draw_thread::*,
+    export_all_window::ExportAllWindow,
     globals,
     result_ext::ResultExt,
     utils::{self, ImageInfo, ImageProperties, ImageType},
@@ -422,13 +423,6 @@ impl MainWindow {
                 if !path.exists() {
                     return;
                 }
-                let expost_dir = path.join("export");
-                if !expost_dir.exists() {
-                    if let Err(e) = fs::create_dir(expost_dir) {
-                        Result::<(), _>::Err(e).warn_log("Failed to create export folder!");
-                        return;
-                    }
-                }
                 win.set_label(&format!(
                     "{} - Post Maker",
                     path.file_name()
@@ -459,6 +453,46 @@ impl MainWindow {
             menu::MenuFlag::Normal,
             move |_| {
                 sender.send_it(DrawMessage::ShowImagesDetails);
+            },
+        );
+
+        let mut export_all = ExportAllWindow::new(Arc::clone(&self.images_list));
+        let mut win = self.win.clone();
+        self.menubar.add(
+            "&Actions/Export All with Quotes...\t",
+            Shortcut::None,
+            menu::MenuFlag::Normal,
+            move |_| {
+                win.deactivate();
+
+                export_all.export();
+                win.activate();
+                win.redraw();
+                fltk::app::awake();
+            },
+        );
+
+        let properties = Arc::clone(&self.properties);
+        let mut win = self.win.clone();
+        self.menubar.add(
+            "&Actions/Delete Exports...\t",
+            Shortcut::None,
+            menu::MenuFlag::Normal,
+            move |_| {
+                win.deactivate();
+                if dialog::choice_default("Do you want to remove exports?", "Yes", "No") == 0 {
+                    let props = rw_read!(properties);
+                    if let Some(prop) = &props.image_info {
+                        let export = prop.path.parent().unwrap().join("export");
+                        if export.exists() {
+                            fs::remove_dir_all(&export)
+                                .warn_log("Failed to remove export directory");
+                        }
+                    }
+                }
+                win.activate();
+                win.redraw();
+                fltk::app::awake();
             },
         );
 

@@ -58,7 +58,7 @@ impl ConfigPicker {
         let top_padding_btn = Frame::default();
         let mut panel_flex = Flex::default().row();
         Frame::default();
-        let apply_btn = Button::default().with_label("apply");
+        let apply_btn = Button::default().with_label("Apply");
         Frame::default();
         panel_flex.set_size(&apply_btn, 100);
         panel_flex.end();

@@ -756,13 +756,12 @@ pub(crate) fn get_export_image_path(image_info: &ImageInfo) -> PathBuf {
         export_format.as_extension()
     );
 
-    let export = image_info
-        .path
-        .parent()
-        .unwrap()
-        .join("export")
-        .join(&image_name);
+    let expost_dir = image_info.path.parent().unwrap().join("export");
+    if !expost_dir.exists() {
+        fs::create_dir(&expost_dir).expect_log("Failed to create export folder!");
+    }
 
+    let export = expost_dir.join(&image_name);
     export
 }
 

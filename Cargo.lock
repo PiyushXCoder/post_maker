@@ -73,6 +73,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
+name = "bichannel"
+version = "0.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4bdf5473d36d166934ddefbedab84ad123ba887d2dd16eb2e1a036c484c213b"
+
+[[package]]
 name = "bit_field"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -879,6 +885,7 @@ dependencies = [
 name = "post_maker"
 version = "0.4.0-alpha.5"
 dependencies = [
+ "bichannel",
  "clap",
  "dirs",
  "fltk",
