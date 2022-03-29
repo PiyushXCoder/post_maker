@@ -43,6 +43,7 @@ pub(crate) struct ExportAllWindow {
     pub(crate) close_btn: Button,
     pub(crate) images_list: Arc<RwLock<Vec<ImageInfo>>>,
     pub(crate) channel: Arc<RwLock<Option<Channel<ThreadMessage, ThreadMessage>>>>,
+    pub(crate) finished: Arc<RwLock<bool>>,
 }
 
 impl ExportAllWindow {
@@ -106,7 +107,7 @@ impl ExportAllWindow {
         main_flex.end();
 
         win.end();
-        win.make_resizable(true);
+        win.make_modal(true);
 
         let mut config_picker = Self {
             win,
@@ -115,6 +116,7 @@ impl ExportAllWindow {
             close_btn,
             images_list,
             channel: Arc::new(RwLock::new(None)),
+            finished: Arc::new(RwLock::new(false)),
         };
         config_picker.event();
 
@@ -124,8 +126,10 @@ impl ExportAllWindow {
     pub(crate) fn export(&mut self) {
         self.image_name.set_label("");
         self.progress.set_label("Exporting...");
+        self.close_btn.set_label("Cancel");
         self.progress.set_maximum(1.0);
         self.progress.set_value(0.0);
+        *rw_write!(self.finished) = false;
         self.win.show();
         let (left, right) = bichannel::channel();
         *rw_write!(self.channel) = Some(left);
@@ -143,25 +147,31 @@ impl ExportAllWindow {
             }
             app::wait();
         }
-        self.win.redraw();
     }
 
     // Set callbacks of elements
     fn event(&mut self) {
-        let channel = Arc::clone(&self.channel);
         // Close Button
+        let channel = Arc::clone(&self.channel);
+        let finished = Arc::clone(&self.finished);
+        let mut win = self.win.clone();
         self.close_btn.set_callback(move |_| {
-            if dialog::choice_default("Are you sure?", "Yes", "No") == 0 {
+            if *rw_read!(finished) == true {
+                win.hide();
+            } else if dialog::choice_default("Are you sure?", "Yes", "No") == 0 {
                 if let Some(c) = &*rw_read!(channel) {
                     c.send(ThreadMessage::Stop).error_log("Failed to stop task");
                 }
             }
         });
 
-        let channel = Arc::clone(&self.channel);
         // Window Close
-        self.win.set_callback(move |_| {
-            if dialog::choice_default("Are you sure?", "Yes", "No") == 0 {
+        let channel = Arc::clone(&self.channel);
+        let finished = Arc::clone(&self.finished);
+        self.win.set_callback(move |f| {
+            if *rw_read!(finished) == true {
+                f.hide();
+            } else if dialog::choice_default("Are you sure?", "Yes", "No") == 0 {
                 if let Some(c) = &*rw_read!(channel) {
                     c.send(ThreadMessage::Stop).error_log("Failed to stop task");
                 }
@@ -182,6 +192,8 @@ fn spawn_export_thread(
     let mut win = export_all.win.clone();
     let mut progress = export_all.progress.clone();
     let mut image_name = export_all.image_name.clone();
+    let mut close_btn = export_all.close_btn.clone();
+    let finished = Arc::clone(&export_all.finished);
     let images_list = Arc::clone(&export_all.images_list);
 
     thread::spawn(move || {
@@ -224,14 +236,20 @@ fn spawn_export_thread(
 
             if let Ok(msg) = channel.try_recv() {
                 match msg {
-                    ThreadMessage::Stop => break,
+                    ThreadMessage::Stop => {
+                        channel
+                            .send(ThreadMessage::HideWindow)
+                            .error_log("Failed to close window");
+                        return;
+                    }
                     _ => (),
                 }
             }
         }
-        image_name.set_label("Done");
-        channel
-            .send(ThreadMessage::HideWindow)
-            .error_log("Failed to close window");
+        image_name.set_label("Finished");
+        close_btn.set_label("Close");
+        *rw_write!(finished) = true;
+        win.redraw();
+        app::awake();
     });
 }

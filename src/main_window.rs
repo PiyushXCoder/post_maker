@@ -490,6 +490,7 @@ impl MainWindow {
             },
         );
 
+        let mut win = self.win.clone();
         let mut export_all = ExportAllWindow::new(Arc::clone(&self.images_list));
         self.menubar.add(
             "&Actions/Export All with Quotes...\t",
@@ -497,6 +498,7 @@ impl MainWindow {
             menu::MenuFlag::Normal,
             move |_| {
                 export_all.export();
+                win.redraw();
                 fltk::app::awake();
             },
         );
