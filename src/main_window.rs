@@ -43,6 +43,7 @@ use std::{
     ffi::OsStr,
     fs,
     path::PathBuf,
+    process::Command,
     sync::Arc,
     sync::{mpsc, RwLock},
 };
@@ -456,6 +457,39 @@ impl MainWindow {
             },
         );
 
+        let properties = Arc::clone(&self.properties);
+        self.menubar.add(
+            "&Actions/Open Exports Folder...\t",
+            Shortcut::None,
+            menu::MenuFlag::Normal,
+            move |_| {
+                let props = rw_read!(properties);
+                if let Some(prop) = &props.image_info {
+                    let export = prop.path.parent().unwrap().join("export");
+                    if export.exists() {
+                        if cfg!(windows) {
+                            Command::new("explorer")
+                                .arg(export.to_str().unwrap_or_default())
+                                .spawn()
+                                .warn_log("Failed top spawn command");
+                        } else if cfg!(unix) {
+                            Command::new("xdg-open")
+                                .arg(export.to_str().unwrap_or_default())
+                                .spawn()
+                                .warn_log("Failed top spawn command");
+                        } else if cfg!(macos) {
+                            Command::new("open")
+                                .arg(export.to_str().unwrap_or_default())
+                                .spawn()
+                                .warn_log("Failed top spawn command");
+                        } else {
+                            dialog::alert_default("Unknown Operating System")
+                        }
+                    }
+                }
+            },
+        );
+
         let mut export_all = ExportAllWindow::new(Arc::clone(&self.images_list));
         let mut win = self.win.clone();
         self.menubar.add(
@@ -464,7 +498,6 @@ impl MainWindow {
             menu::MenuFlag::Normal,
             move |_| {
                 win.deactivate();
-
                 export_all.export();
                 win.activate();
                 win.redraw();
