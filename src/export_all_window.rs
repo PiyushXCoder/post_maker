@@ -14,7 +14,7 @@
 
 //! Picker to pick config if multiple configs are present or defalut config is not present
 use crate::{
-    dialog, globals,
+    config, dialog, globals,
     result_ext::ResultExt,
     utils::{self, ImageContainer, ImageInfo, ImageProperties, ImagePropertiesFile},
 };
@@ -52,6 +52,14 @@ impl ExportAllWindow {
             SvgImage::from_data(globals::ICON.to_str().unwrap()).unwrap(),
         ));
 
+        let progress_color = if *globals::THEME == config::Themes::Dark
+            || *globals::THEME == config::Themes::HighContrast
+        {
+            enums::Color::rgb_color(0, 116, 80)
+        } else {
+            enums::Color::rgb_color(34, 203, 135)
+        };
+
         let mut main_flex = Flex::default().size_of_parent().column();
 
         //label
@@ -78,6 +86,9 @@ impl ExportAllWindow {
         let mut progress = Progress::default().with_label("Exporting...");
         progress.set_maximum(1.0);
         progress.set_value(0.0);
+        progress.set_frame(enums::FrameType::ThinDownBox);
+        progress.set_selection_color(progress_color);
+
         Frame::default();
         panel_flex.set_size(&progress, 490);
         panel_flex.end();
