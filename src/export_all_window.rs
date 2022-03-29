@@ -134,13 +134,16 @@ impl ExportAllWindow {
             if let Some(channel) = &*rw_read!(self.channel) {
                 if let Ok(msg) = channel.try_recv() {
                     match msg {
-                        ThreadMessage::HideWindow => self.win.hide(),
+                        ThreadMessage::HideWindow => {
+                            self.win.hide();
+                        }
                         _ => (),
                     }
                 }
             }
             app::wait();
         }
+        self.win.redraw();
     }
 
     // Set callbacks of elements
