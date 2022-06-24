@@ -126,7 +126,7 @@ impl ImageContainer {
         prop.quote_position = height * config.quote_position_ratio;
         prop.subquote_position = height * config.subquote_position_ratio;
         prop.subquote2_position = height * config.subquote2_position_ratio;
-        prop.tag_position = height * config.tag_position_ratio;
+        prop.tag_position = height * config.tag_y_position_ratio;
         prop.tag2_position = height * config.tag2_position_ratio;
 
         Self {
@@ -223,7 +223,7 @@ impl ImageContainer {
         let image_info = &prop.image_info;
         let (export_path, path_properties, mut original_image) = match image_info {
             Some(p) => (
-                get_export_image_path(p),
+                get_export_image_path(p, &prop.name_prefix),
                 get_properties_path(p),
                 load_image(p),
             ),
@@ -361,11 +361,10 @@ impl ImageContainer {
 
     pub(crate) fn delete(&self) {
         let prop = rw_read!(self.properties);
-
         let image_info = &prop.image_info;
         let (export_path, path_image, path_properties) = match image_info {
             Some(p) => (
-                get_export_image_path(p),
+                get_export_image_path(p, &prop.name_prefix),
                 Path::new(&p.path),
                 get_properties_path(p),
             ),
@@ -390,6 +389,7 @@ impl ImageContainer {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct ImagePropertiesFile {
     pub(crate) crop_position: Option<(f64, f64)>,
+    pub(crate) name_prefix: Option<String>,
     pub(crate) quote: Option<String>,
     pub(crate) subquote: Option<String>,
     pub(crate) subquote2: Option<String>,
@@ -407,6 +407,7 @@ impl Default for ImagePropertiesFile {
     fn default() -> Self {
         Self {
             crop_position: None,
+            name_prefix: None,
             quote: None,
             subquote: None,
             subquote2: None,
@@ -426,6 +427,7 @@ impl From<&ImageProperties> for ImagePropertiesFile {
     fn from(props: &ImageProperties) -> Self {
         Self {
             crop_position: props.crop_position,
+            name_prefix: Some(props.name_prefix.clone()),
             quote: Some(props.quote.clone()),
             subquote: Some(props.subquote.clone()),
             subquote2: Some(props.subquote2.clone()),
@@ -448,6 +450,7 @@ pub(crate) struct ImageProperties {
     pub(crate) dimension: (f64, f64),
     pub(crate) original_dimension: (f64, f64),
     pub(crate) crop_position: Option<(f64, f64)>,
+    pub(crate) name_prefix: String,
     pub(crate) quote: String,
     pub(crate) subquote: String,
     pub(crate) subquote2: String,
@@ -469,6 +472,7 @@ impl Default for ImageProperties {
             dimension: (0.0, 0.0),
             original_dimension: (0.0, 0.0),
             crop_position: None,
+            name_prefix: "".to_owned(),
             quote: "".to_owned(),
             subquote: "".to_owned(),
             subquote2: "".to_owned(),
@@ -493,6 +497,7 @@ impl ImageProperties {
         tag2_default: &str,
     ) {
         self.crop_position = props.crop_position;
+        self.name_prefix = props.name_prefix.unwrap_or("".to_owned());
         self.quote = props.quote.unwrap_or("".to_owned());
         self.subquote = props.subquote.unwrap_or("".to_owned());
         self.subquote2 = props.subquote2.unwrap_or("".to_owned());
@@ -564,7 +569,7 @@ fn draw_layer_and_text(
     subquote2_position: f64,
     tag: &str,
     tag2: &str,
-    tag_position: f64,
+    tag_y_position: f64,
     tag2_position: f64,
     original_height: f64,
 ) {
@@ -624,8 +629,9 @@ fn draw_layer_and_text(
         imageproc::drawing::draw_text_mut(
             tmp,
             image::Rgba([255, 255, 255, 255]),
-            (width * 0.99 - text_width) as i32,
-            ((tag_position * height) / original_height + index as f64 * (text_height * 1.2)) as i32,
+            (width * rw_read!(globals::CONFIG).tag_x_position_ratio - text_width) as i32,
+            ((tag_y_position * height) / original_height + index as f64 * (text_height * 1.2))
+                as i32,
             rusttype::Scale::uniform(size as f32),
             &globals::FONT_TAG,
             line,
@@ -725,7 +731,7 @@ pub(crate) fn get_properties_path(image_info: &ImageInfo) -> PathBuf {
 }
 
 /// path of properties files
-pub(crate) fn get_export_image_path(image_info: &ImageInfo) -> PathBuf {
+pub(crate) fn get_export_image_path(image_info: &ImageInfo, name_prefix: &str) -> PathBuf {
     let config = rw_read!(globals::CONFIG);
     let export_format = &config.image_format;
     let image_name = image_info
@@ -751,7 +757,8 @@ pub(crate) fn get_export_image_path(image_info: &ImageInfo) -> PathBuf {
         .into_iter()
         .rev();
     let image_name = format!(
-        "{}.{}",
+        "{}{}.{}",
+        name_prefix,
         String::from_iter(image_name),
         export_format.as_extension()
     );

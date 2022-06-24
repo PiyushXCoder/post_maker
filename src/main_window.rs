@@ -56,6 +56,7 @@ pub(crate) struct MainWindow {
     pub(crate) save_btn: Button,
     /// To choose the file which is being edited in directory
     pub(crate) file_choice: menu::Choice,
+    pub(crate) name_prefix: Input,
     pub(crate) quote: MultilineInput,
     pub(crate) subquote: MultilineInput,
     pub(crate) subquote2: MultilineInput,
@@ -133,6 +134,15 @@ impl MainWindow {
         let mut workspace_flex = Flex::default().row();
         // Controls Left
         let mut left_controls_flex = Flex::default().column();
+        left_controls_flex.set_size(
+            &Frame::default()
+                .with_label("Name Prefix:")
+                .with_align(enums::Align::Left | enums::Align::Inside),
+            25,
+        );
+        let name_prefix = Input::default();
+        left_controls_flex.set_size(&name_prefix, 30);
+
         left_controls_flex.set_size(
             &Frame::default()
                 .with_label("Quote:")
@@ -355,6 +365,7 @@ impl MainWindow {
             next_btn,
             save_btn,
             file_choice,
+            name_prefix,
             quote,
             subquote,
             subquote2,
@@ -675,7 +686,7 @@ impl MainWindow {
         self.reset_tag_position_btn.set_callback(move |_| {
             let mut prop = rw_write!(properties);
             let height = prop.original_dimension.1;
-            let pos = height * rw_read!(globals::CONFIG).tag_position_ratio;
+            let pos = height * rw_read!(globals::CONFIG).tag_y_position_ratio;
             prop.tag_position = pos;
             prop.is_saved = false;
             tag_position.set_value(pos);
@@ -822,6 +833,17 @@ impl MainWindow {
             }
             sender.send_it(DrawMessage::Open);
             sender.send_it(DrawMessage::CheckImage);
+        });
+
+        // Name Prefix Input
+        let properties = Arc::clone(&self.properties);
+        self.name_prefix.handle(move |f, ev| {
+            if ev == enums::Event::KeyUp {
+                let mut prop = rw_write!(properties);
+                prop.name_prefix = f.value();
+                prop.is_saved = false;
+            }
+            true
         });
 
         // Quote Input

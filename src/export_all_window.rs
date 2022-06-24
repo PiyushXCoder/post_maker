@@ -200,6 +200,12 @@ fn spawn_export_thread(
         let total = rw_read!(images_list).len();
         progress.set_maximum(total as f64);
         progress.set_value(0.0);
+
+        let mut update_progress = |idx: usize| {
+            progress.set_value(idx as f64 + 1.0);
+            progress.set_label(&format!("[{}/{}]", idx + 1, total));
+        };
+
         for (idx, image) in (*rw_read!(images_list)).iter().enumerate() {
             image_name.set_label(
                 image
@@ -214,23 +220,29 @@ fn spawn_export_thread(
             let properties_file = utils::get_properties_path(image);
             let read = match File::open(&properties_file) {
                 Ok(r) => r,
-                Err(_) => continue,
+                Err(_) => {
+                    update_progress(idx);
+                    continue;
+                }
             };
             let read = match serde_json::from_reader::<File, ImagePropertiesFile>(read) {
                 Ok(r) => r,
-                Err(_) => continue,
+                Err(_) => {
+                    update_progress(idx);
+                    continue;
+                }
             };
 
             rw_write!(container.properties).merge(read, "", "");
 
             if rw_read!(container.properties).quote.trim().len() == 0 {
+                update_progress(idx);
                 continue;
             }
 
             container.save();
 
-            progress.set_value(idx as f64 + 1.0);
-            progress.set_label(&format!("[{}/{}]", idx + 1, total));
+            update_progress(idx);
             win.redraw();
             app::awake();
 
@@ -247,6 +259,7 @@ fn spawn_export_thread(
             }
         }
         image_name.set_label("Finished");
+        progress.set_value(total as f64);
         close_btn.set_label("Close");
         *rw_write!(finished) = true;
         win.redraw();

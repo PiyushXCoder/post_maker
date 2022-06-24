@@ -499,8 +499,9 @@ dependencies = [
 
 [[package]]
 name = "imageproc"
-version = "0.22.0"
-source = "git+https://github.com/image-rs/imageproc#b7942657b1a370fc485507693ed4df1f8a116cb7"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6aee993351d466301a29655d628bfc6f5a35a0d062b6160ca0808f425805fd7"
 dependencies = [
  "approx",
  "conv",
@@ -883,7 +884,7 @@ dependencies = [
 
 [[package]]
 name = "post_maker"
-version = "0.4.0-alpha.5"
+version = "0.5.0-alpha.1"
 dependencies = [
  "bichannel",
  "clap",

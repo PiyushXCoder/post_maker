@@ -68,6 +68,7 @@ pub(crate) fn spawn_image_thread(
 ) {
     let mut win = main_win.win.clone();
     let mut file_choice = main_win.file_choice.clone();
+    let mut name_prefix = main_win.name_prefix.clone();
     let mut quote = main_win.quote.clone();
     let mut subquote = main_win.subquote.clone();
     let mut subquote2 = main_win.subquote2.clone();
@@ -101,6 +102,7 @@ pub(crate) fn spawn_image_thread(
                         &mut file_choice,
                         Arc::clone(&images_list),
                         None,
+                        &mut name_prefix,
                         &mut quote,
                         &mut subquote,
                         &mut subquote2,
@@ -134,6 +136,7 @@ pub(crate) fn spawn_image_thread(
                         &mut file_choice,
                         Arc::clone(&images_list),
                         Some((x, y)),
+                        &mut name_prefix,
                         &mut quote,
                         &mut subquote,
                         &mut subquote2,
@@ -240,6 +243,7 @@ fn load_image(
     file_choice: &mut menu::Choice,
     images_list: Arc<RwLock<Vec<ImageInfo>>>,
     crop: Option<(f64, f64)>,
+    name_prefix: &mut Input,
     quote: &mut MultilineInput,
     subquote: &mut MultilineInput,
     subquote2: &mut MultilineInput,
@@ -293,6 +297,7 @@ fn load_image(
         properties.merge(read, &tag.value(), &tag2.value());
         properties.is_saved = true;
 
+        name_prefix.set_value(&properties.name_prefix);
         quote.set_value(&properties.quote);
         subquote.set_value(&properties.subquote);
         subquote2.set_value(&properties.subquote2);

@@ -17,8 +17,8 @@
 use crate::{
     config::{self, ConfigFile},
     dialog, globals,
+    result_ext::ResultExt,
     utils::{self, ImageType},
-    result_ext::ResultExt
 };
 use fltk::{
     app,
@@ -60,7 +60,8 @@ pub(crate) struct ConfigWindow {
     pub(crate) quote_position_ratio: ValueInput,
     pub(crate) subquote_position_ratio: ValueInput,
     pub(crate) subquote2_position_ratio: ValueInput,
-    pub(crate) tag_position_ratio: ValueInput,
+    pub(crate) tag_x_position_ratio: ValueInput,
+    pub(crate) tag_y_position_ratio: ValueInput,
     pub(crate) tag2_position_ratio: ValueInput,
     pub(crate) image_ratio_width: ValueInput,
     pub(crate) image_ratio_height: ValueInput,
@@ -335,16 +336,27 @@ impl ConfigWindow {
 
         // column 2
         let mut col_grp = Flex::default().column();
-        let mut tag_position_ratio_grp = Flex::default().row();
-        tag_position_ratio_grp.set_size(
+        let mut tag_x_position_ratio_grp = Flex::default().row();
+        tag_x_position_ratio_grp.set_size(
             &Frame::default()
-                .with_label("Tag")
+                .with_label("Tag (x)")
                 .with_align(Align::Right | Align::Inside),
             130,
         );
-        let tag_position_ratio = ValueInput::default();
-        tag_position_ratio_grp.end();
-        col_grp.set_size(&tag_position_ratio_grp, 30);
+        let tag_x_position_ratio = ValueInput::default();
+        tag_x_position_ratio_grp.end();
+        col_grp.set_size(&tag_x_position_ratio_grp, 30);
+
+        let mut tag_y_position_ratio_grp = Flex::default().row();
+        tag_y_position_ratio_grp.set_size(
+            &Frame::default()
+                .with_label("Tag (y)")
+                .with_align(Align::Right | Align::Inside),
+            130,
+        );
+        let tag_y_position_ratio = ValueInput::default();
+        tag_y_position_ratio_grp.end();
+        col_grp.set_size(&tag_y_position_ratio_grp, 30);
 
         let mut tag2_position_ratio_grp = Flex::default().row();
         tag2_position_ratio_grp.set_size(
@@ -488,7 +500,8 @@ impl ConfigWindow {
             quote_position_ratio,
             subquote_position_ratio,
             subquote2_position_ratio,
-            tag_position_ratio,
+            tag_x_position_ratio,
+            tag_y_position_ratio,
             tag2_position_ratio,
             image_ratio_width,
             image_ratio_height,
@@ -540,7 +553,10 @@ impl ConfigWindow {
             .set_value(config.subquote_position_ratio);
         self.subquote2_position_ratio
             .set_value(config.subquote2_position_ratio);
-        self.tag_position_ratio.set_value(config.tag_position_ratio);
+        self.tag_x_position_ratio
+            .set_value(config.tag_x_position_ratio);
+        self.tag_y_position_ratio
+            .set_value(config.tag_y_position_ratio);
         self.tag2_position_ratio
             .set_value(config.tag2_position_ratio);
         self.image_ratio_width.set_value(config.image_ratio.0);
@@ -590,7 +606,8 @@ impl ConfigWindow {
         let mut quote_position_ratio = self.quote_position_ratio.clone();
         let mut subquote_position_ratio = self.subquote_position_ratio.clone();
         let mut subquote2_position_ratio = self.subquote2_position_ratio.clone();
-        let mut tag_position_ratio = self.tag_position_ratio.clone();
+        let mut tag_x_position_ratio = self.tag_x_position_ratio.clone();
+        let mut tag_y_position_ratio = self.tag_y_position_ratio.clone();
         let mut tag2_position_ratio = self.tag2_position_ratio.clone();
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
@@ -635,7 +652,8 @@ impl ConfigWindow {
             quote_position_ratio.set_value(conf.quote_position_ratio);
             subquote_position_ratio.set_value(conf.subquote_position_ratio);
             subquote2_position_ratio.set_value(conf.subquote2_position_ratio);
-            tag_position_ratio.set_value(conf.tag_position_ratio);
+            tag_x_position_ratio.set_value(conf.tag_x_position_ratio);
+            tag_y_position_ratio.set_value(conf.tag_y_position_ratio);
             tag2_position_ratio.set_value(conf.tag2_position_ratio);
             image_ratio_width.set_value(conf.image_ratio.0);
             image_ratio_height.set_value(conf.image_ratio.1);
@@ -664,7 +682,8 @@ impl ConfigWindow {
         let mut quote_position_ratio = self.quote_position_ratio.clone();
         let mut subquote_position_ratio = self.subquote_position_ratio.clone();
         let mut subquote2_position_ratio = self.subquote2_position_ratio.clone();
-        let mut tag_position_ratio = self.tag_position_ratio.clone();
+        let mut tag_x_position_ratio = self.tag_x_position_ratio.clone();
+        let mut tag_y_position_ratio = self.tag_y_position_ratio.clone();
         let mut tag2_position_ratio = self.tag2_position_ratio.clone();
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
@@ -708,7 +727,8 @@ impl ConfigWindow {
                 quote_position_ratio.set_value(conf.quote_position_ratio);
                 subquote_position_ratio.set_value(conf.subquote_position_ratio);
                 subquote2_position_ratio.set_value(conf.subquote2_position_ratio);
-                tag_position_ratio.set_value(conf.tag_position_ratio);
+                tag_x_position_ratio.set_value(conf.tag_x_position_ratio);
+                tag_y_position_ratio.set_value(conf.tag_y_position_ratio);
                 tag2_position_ratio.set_value(conf.tag2_position_ratio);
                 image_ratio_width.set_value(conf.image_ratio.0);
                 image_ratio_height.set_value(conf.image_ratio.1);
@@ -734,7 +754,8 @@ impl ConfigWindow {
         let mut quote_position_ratio = self.quote_position_ratio.clone();
         let mut subquote_position_ratio = self.subquote_position_ratio.clone();
         let mut subquote2_position_ratio = self.subquote2_position_ratio.clone();
-        let mut tag_position_ratio = self.tag_position_ratio.clone();
+        let mut tag_x_position_ratio = self.tag_x_position_ratio.clone();
+        let mut tag_y_position_ratio = self.tag_y_position_ratio.clone();
         let mut tag2_position_ratio = self.tag2_position_ratio.clone();
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
@@ -768,7 +789,8 @@ impl ConfigWindow {
                 quote_position_ratio.set_value(conf.quote_position_ratio);
                 subquote_position_ratio.set_value(conf.subquote_position_ratio);
                 subquote2_position_ratio.set_value(conf.subquote2_position_ratio);
-                tag_position_ratio.set_value(conf.tag_position_ratio);
+                tag_x_position_ratio.set_value(conf.tag_x_position_ratio);
+                tag_y_position_ratio.set_value(conf.tag_y_position_ratio);
                 tag2_position_ratio.set_value(conf.tag2_position_ratio);
                 image_ratio_width.set_value(conf.image_ratio.0);
                 image_ratio_height.set_value(conf.image_ratio.1);
@@ -1011,16 +1033,31 @@ impl ConfigWindow {
             true
         });
 
-        // Tag position ratio
+        // Tag x position ratio
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
-        self.tag_position_ratio.handle(move |f, ev| {
+        self.tag_x_position_ratio.handle(move |f, ev| {
             if ev == Event::KeyUp {
                 if let Some(conf) = configs
                     .borrow_mut()
                     .get_mut(&browse.selected_text().unwrap())
                 {
-                    conf.tag_position_ratio = f.value();
+                    conf.tag_x_position_ratio = f.value();
+                }
+            }
+            true
+        });
+
+        // Tag y position ratio
+        let browse = self.browse.clone();
+        let configs = Rc::clone(&self.configs);
+        self.tag_y_position_ratio.handle(move |f, ev| {
+            if ev == Event::KeyUp {
+                if let Some(conf) = configs
+                    .borrow_mut()
+                    .get_mut(&browse.selected_text().unwrap())
+                {
+                    conf.tag_y_position_ratio = f.value();
                 }
             }
             true
@@ -1183,7 +1220,8 @@ impl ConfigWindow {
         let mut quote_position_ratio = self.quote_position_ratio.clone();
         let mut subquote_position_ratio = self.subquote_position_ratio.clone();
         let mut subquote2_position_ratio = self.subquote2_position_ratio.clone();
-        let mut tag_position_ratio = self.tag_position_ratio.clone();
+        let mut tag_x_position_ratio = self.tag_x_position_ratio.clone();
+        let mut tag_y_position_ratio = self.tag_y_position_ratio.clone();
         let mut tag2_position_ratio = self.tag2_position_ratio.clone();
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
@@ -1210,7 +1248,8 @@ impl ConfigWindow {
             quote_position_ratio.set_value(conf.quote_position_ratio);
             subquote_position_ratio.set_value(conf.subquote_position_ratio);
             subquote2_position_ratio.set_value(conf.subquote2_position_ratio);
-            tag_position_ratio.set_value(conf.tag_position_ratio);
+            tag_x_position_ratio.set_value(conf.tag_x_position_ratio);
+            tag_y_position_ratio.set_value(conf.tag_y_position_ratio);
             tag2_position_ratio.set_value(conf.tag2_position_ratio);
             image_ratio_width.set_value(conf.image_ratio.0);
             image_ratio_height.set_value(conf.image_ratio.1);
