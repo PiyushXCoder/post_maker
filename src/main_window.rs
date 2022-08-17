@@ -777,8 +777,8 @@ impl MainWindow {
         self.next_btn.set_callback(move |_| {
             let prop = rw_read!(properties);
             if !prop.is_saved {
-                let save = fltk::dialog::choice_default("Save?", "yes", "no", "cancel");
-                match save {
+                let save = fltk::dialog::choice2_default("Save?", "yes", "no", "cancel");
+                match save.unwrap_or(-1) {
                     0 => sender.send_it(DrawMessage::Save),
                     1 => {}
                     _ => return,
@@ -801,8 +801,8 @@ impl MainWindow {
         self.back_btn.set_callback(move |_| {
             let prop = rw_read!(properties);
             if !prop.is_saved {
-                let save = fltk::dialog::choice_default("Save?", "yes", "no", "cancel");
-                match save {
+                let save = fltk::dialog::choice2_default("Save?", "yes", "no", "cancel");
+                match save.unwrap_or(-1) {
                     0 => sender.send_it(DrawMessage::Save),
                     1 => {}
                     _ => return,
@@ -824,8 +824,8 @@ impl MainWindow {
         self.file_choice.set_callback(move |_| {
             let prop = rw_read!(properties);
             if !prop.is_saved {
-                let save = fltk::dialog::choice_default("Save?", "yes", "no", "cancel");
-                match save {
+                let save = fltk::dialog::choice2_default("Save?", "yes", "no", "cancel");
+                match save.unwrap_or(-1) {
                     0 => sender.send_it(DrawMessage::Save),
                     1 => {}
                     _ => return,

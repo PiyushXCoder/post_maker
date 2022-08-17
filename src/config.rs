@@ -132,6 +132,7 @@ pub(crate) struct ConfigFile {
     pub(crate) color_layer: [u8; 4],
     pub(crate) minimum_width_limit: f64, // for export of image
     pub(crate) maximum_width_limit: f64, // for export of image
+    pub(crate) draw_box_around_quote: bool,
     pub(crate) image_format: ImageType,
 }
 
@@ -155,10 +156,11 @@ impl Default for ConfigFile {
             tag_y_position_ratio: 0.5,
             tag2_position_ratio: 0.95,
             image_ratio: (4.0, 5.0),
-            color_layer: [20, 22, 25, 197],
+            color_layer: [20, 22, 25, 80],
             minimum_width_limit: 650.0,
             maximum_width_limit: 1080.0,
-            image_format: ImageType::Png,
+            draw_box_around_quote: true,
+            image_format: ImageType::Jpeg,
         }
     }
 }

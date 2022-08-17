@@ -20,7 +20,8 @@ use std::{
 };
 
 use fltk::{button::Button, enums, prelude::*};
-use image::{DynamicImage, GenericImageView, ImageBuffer, ImageEncoder};
+use image::{DynamicImage, GenericImageView, ImageBuffer, ImageEncoder, Pixel};
+use imageproc::rect::Rect;
 use serde::{Deserialize, Serialize};
 
 use crate::globals;
@@ -211,6 +212,7 @@ impl ImageContainer {
             &prop.tag2,
             prop.tag_position,
             prop.tag2_position,
+            prop.original_dimension.0,
             prop.original_dimension.1,
         );
 
@@ -275,6 +277,7 @@ impl ImageContainer {
             &prop.tag2,
             prop.tag_position,
             prop.tag2_position,
+            prop.original_dimension.0,
             prop.original_dimension.1,
         );
 
@@ -571,6 +574,7 @@ fn draw_layer_and_text(
     tag2: &str,
     tag_y_position: f64,
     tag2_position: f64,
+    original_width: f64,
     original_height: f64,
 ) {
     let (width, height): (f64, f64) = Coord::from(tmp.dimensions()).into();
@@ -586,16 +590,21 @@ fn draw_layer_and_text(
         &globals::FONT_QUOTE,
         size,
         quote_position,
+        original_width,
         original_height,
+        true,
         quote,
     );
+
     let size = subquote_from_height(height);
     draw_multiline_mid_string(
         tmp,
         &globals::FONT_SUBQUOTE,
         size,
         subquote_position,
+        original_width,
         original_height,
+        true,
         subquote,
     );
     let size = subquote2_from_height(height);
@@ -604,7 +613,9 @@ fn draw_layer_and_text(
         &globals::FONT_SUBQUOTE2,
         size,
         subquote2_position,
+        original_width,
         original_height,
+        true,
         subquote2,
     );
 
@@ -614,7 +625,9 @@ fn draw_layer_and_text(
         &globals::FONT_TAG2,
         size,
         tag2_position,
+        original_width,
         original_height,
+        false,
         tag2,
     );
 
@@ -645,24 +658,137 @@ pub(crate) fn draw_multiline_mid_string(
     font: &rusttype::Font,
     size: f64,
     position: f64,
+    original_width: f64,
     original_height: f64,
+    boxed: bool,
     text: &str,
 ) {
+    let (mut box_width, mut box_height) = (0.0, 0.0);
+
     let (width, height): (f64, f64) = Coord::from(tmp.dimensions()).into();
     for (index, line) in text.lines().enumerate() {
         let (text_width, text_height) =
             measure_line(font, line, rusttype::Scale::uniform(size as f32));
 
-        imageproc::drawing::draw_text_mut(
+        if text_width > box_width {
+            box_width = text_width;
+        }
+        box_height += text_height * 1.15;
+
+        let (x, y) = (
+            (width - text_width) / 2.0,
+            (position * height) / original_height + index as f64 * (text_height * 1.15),
+        );
+
+        if !boxed || !rw_read!(globals::CONFIG).draw_box_around_quote {
+            imageproc::drawing::draw_text_mut(
+                tmp,
+                image::Rgba([255, 255, 255, 100]),
+                x as i32,
+                y as i32,
+                rusttype::Scale::uniform(size as f32),
+                font,
+                line,
+            );
+        }
+    }
+
+    if boxed && rw_read!(globals::CONFIG).draw_box_around_quote {
+        draw_box(
             tmp,
-            image::Rgba([255, 255, 255, 255]),
-            ((width - text_width) / 2.0) as i32,
-            ((position * height) / original_height + index as f64 * (text_height * 1.15)) as i32,
-            rusttype::Scale::uniform(size as f32),
+            box_width,
+            box_height,
+            position,
+            original_width,
+            original_height,
+        );
+
+        let size = quote_from_height(height);
+        draw_multiline_mid_string(
+            tmp,
             font,
-            line,
+            size,
+            position,
+            original_width,
+            original_height,
+            false,
+            text,
         );
     }
+}
+
+/// Draws box around text.
+fn draw_box(
+    tmp: &mut DynamicImage,
+    box_width: f64,
+    box_height: f64,
+    position: f64,
+    original_width: f64,
+    original_height: f64,
+) {
+    if box_width <= 0.0 {
+        return;
+    }
+
+    let (width, height): (f64, f64) = Coord::from(tmp.dimensions()).into();
+    let (delta_x, delta_y) = (width / original_width, height / original_height);
+
+    let (x_gap, y_gap) = (8.0 * delta_x, 5.0 * delta_y);
+    let (x, y) = (
+        ((width - box_width) / 2.0 - x_gap) as u32,
+        ((position * height) / original_height - y_gap) as u32,
+    );
+    let (w, h) = (
+        (box_width + x_gap * 2.0) as u32,
+        (box_height + y_gap * 2.0) as u32,
+    );
+
+    if x >= width as u32 || y >= height as u32 {
+        return;
+    }
+
+    let mut buff = tmp.crop(x, y, w, h);
+    let layer = DynamicImage::ImageRgba8(ImageBuffer::from_fn(w, h, |_, _| {
+        image::Rgba([20, 22, 25, 80])
+    }));
+    image::imageops::overlay(&mut buff, &layer, 0, 0);
+    buff = buff.blur(15.0);
+
+    let (dx, dy) = (20.0 * delta_x, 20.0 * delta_y);
+    let mut shadow = DynamicImage::new_rgba8(w + (dx * 2.0) as u32, h + (dy * 2.0) as u32);
+    imageproc::drawing::draw_hollow_rect_mut(
+        &mut shadow,
+        Rect::at(dx as i32, dy as i32).of_size(w, h),
+        image::Rgba([30, 30, 30, 255]),
+    );
+    shadow = shadow.blur(5.0 * delta_x as f32);
+
+    image::imageops::overlay(tmp, &shadow, x as i64 - dx as i64, y as i64 - dy as i64);
+    image::imageops::overlay(tmp, &buff, x as i64, y as i64);
+
+    let mut color = buff.get_pixel(0, 0).to_rgba();
+    color.blend(&buff.get_pixel(0, buff.height() - 1).to_rgba());
+    color.blend(
+        &buff
+            .get_pixel(buff.width() - 1, buff.height() - 1)
+            .to_rgba(),
+    );
+    color.blend(&buff.get_pixel(buff.width() - 1, 0).to_rgba());
+    imageproc::drawing::draw_hollow_rect_mut(
+        tmp,
+        Rect::at(
+            x as i32 - (delta_x * 1.0) as i32,
+            y as i32 - (delta_x * 1.0) as i32,
+        )
+        .of_size(w + (delta_x * 2.0) as u32, h + (delta_x * 2.0) as u32),
+        color.clone(),
+    );
+    color.blend(&image::Rgba([0, 0, 0, 2]));
+    imageproc::drawing::draw_hollow_rect_mut(
+        tmp,
+        Rect::at(x as i32, y as i32).of_size(w, h),
+        color.clone(),
+    );
 }
 
 /// Get size of text to draw on image

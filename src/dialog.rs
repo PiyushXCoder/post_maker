@@ -18,5 +18,5 @@ pub(crate) fn message_default(txt: &str) {
 
 pub(crate) fn choice_default(txt: &str, b0: &str, b1: &str) -> i32 {
     let (x, y) = get_mouse();
-    dialog::choice(x, y, txt, b0, b1, "")
+    dialog::choice2(x, y, txt, b0, b1, "").unwrap_or(-1)
 }

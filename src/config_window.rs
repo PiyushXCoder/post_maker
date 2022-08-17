@@ -23,7 +23,7 @@ use crate::{
 use fltk::{
     app,
     browser::{Browser, BrowserType},
-    button::{Button, RadioRoundButton},
+    button::{Button, CheckButton, RadioRoundButton},
     dialog::{FileDialogOptions, NativeFileChooser},
     enums::{self, Align, Event, Font},
     frame::Frame,
@@ -65,6 +65,7 @@ pub(crate) struct ConfigWindow {
     pub(crate) tag2_position_ratio: ValueInput,
     pub(crate) image_ratio_width: ValueInput,
     pub(crate) image_ratio_height: ValueInput,
+    pub(crate) draw_box_around_quote: CheckButton,
     pub(crate) minimum_width_limit: ValueInput,
     pub(crate) maximum_width_limit: ValueInput,
     /// RGB value of top translucent layer
@@ -389,6 +390,18 @@ impl ConfigWindow {
         image_ratio_grp.end();
         col.set_size(&image_ratio_grp, 30);
 
+        // Draw box around Quote
+        let mut label = Frame::default().with_label("Draw Box:");
+        label.set_label_font(enums::Font::HelveticaBold);
+        col.set_size(&label, 15);
+
+        let mut draw_box_around_quote_flex = Flex::default().row();
+        draw_box_around_quote_flex.set_size(&Frame::default(), 20);
+        let mut draw_box_around_quote = CheckButton::default().with_label("Draw box around text");
+        draw_box_around_quote.set_value(true);
+        draw_box_around_quote_flex.end();
+        col.set_size(&draw_box_around_quote_flex, 30);
+
         let mut label = Frame::default().with_label("Image with limits:");
         label.set_label_font(enums::Font::HelveticaBold);
         col.set_size(&label, 15);
@@ -505,6 +518,7 @@ impl ConfigWindow {
             tag2_position_ratio,
             image_ratio_width,
             image_ratio_height,
+            draw_box_around_quote,
             minimum_width_limit,
             maximum_width_limit,
             translucent_layer_rgb,
@@ -561,6 +575,8 @@ impl ConfigWindow {
             .set_value(config.tag2_position_ratio);
         self.image_ratio_width.set_value(config.image_ratio.0);
         self.image_ratio_height.set_value(config.image_ratio.1);
+        self.draw_box_around_quote
+            .set_checked(config.draw_box_around_quote);
         self.minimum_width_limit
             .set_value(config.minimum_width_limit);
         self.maximum_width_limit
@@ -611,6 +627,7 @@ impl ConfigWindow {
         let mut tag2_position_ratio = self.tag2_position_ratio.clone();
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
+        let draw_box_around_quote = self.draw_box_around_quote.clone();
         let mut minimum_width_limit = self.minimum_width_limit.clone();
         let mut maximum_width_limit = self.maximum_width_limit.clone();
         let mut layer_rgb = self.translucent_layer_rgb.clone();
@@ -657,6 +674,7 @@ impl ConfigWindow {
             tag2_position_ratio.set_value(conf.tag2_position_ratio);
             image_ratio_width.set_value(conf.image_ratio.0);
             image_ratio_height.set_value(conf.image_ratio.1);
+            draw_box_around_quote.set_checked(conf.draw_box_around_quote);
             minimum_width_limit.set_value(conf.minimum_width_limit);
             maximum_width_limit.set_value(conf.maximum_width_limit);
             utils::set_color_btn_rgba(conf.color_layer, &mut layer_rgb);
@@ -687,6 +705,7 @@ impl ConfigWindow {
         let mut tag2_position_ratio = self.tag2_position_ratio.clone();
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
+        let draw_box_around_quote = self.draw_box_around_quote.clone();
         let mut minimum_width_limit = self.minimum_width_limit.clone();
         let mut maximum_width_limit = self.maximum_width_limit.clone();
         let mut layer_rgb = self.translucent_layer_rgb.clone();
@@ -732,6 +751,7 @@ impl ConfigWindow {
                 tag2_position_ratio.set_value(conf.tag2_position_ratio);
                 image_ratio_width.set_value(conf.image_ratio.0);
                 image_ratio_height.set_value(conf.image_ratio.1);
+                draw_box_around_quote.set_checked(conf.draw_box_around_quote);
                 minimum_width_limit.set_value(conf.minimum_width_limit);
                 maximum_width_limit.set_value(conf.maximum_width_limit);
                 utils::set_color_btn_rgba(conf.color_layer, &mut layer_rgb);
@@ -759,6 +779,7 @@ impl ConfigWindow {
         let mut tag2_position_ratio = self.tag2_position_ratio.clone();
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
+        let draw_box_around_quote = self.draw_box_around_quote.clone();
         let mut minimum_width_limit = self.minimum_width_limit.clone();
         let mut maximum_width_limit = self.maximum_width_limit.clone();
         let mut layer_rgb = self.translucent_layer_rgb.clone();
@@ -794,6 +815,7 @@ impl ConfigWindow {
                 tag2_position_ratio.set_value(conf.tag2_position_ratio);
                 image_ratio_width.set_value(conf.image_ratio.0);
                 image_ratio_height.set_value(conf.image_ratio.1);
+                draw_box_around_quote.set_checked(conf.draw_box_around_quote);
                 minimum_width_limit.set_value(conf.minimum_width_limit);
                 maximum_width_limit.set_value(conf.maximum_width_limit);
                 utils::set_color_btn_rgba(conf.color_layer, &mut layer_rgb);
@@ -1108,6 +1130,18 @@ impl ConfigWindow {
             true
         });
 
+        let browse = self.browse.clone();
+        let configs = Rc::clone(&self.configs);
+        self.draw_box_around_quote.handle(move |f, _| {
+            if let Some(conf) = configs
+                .borrow_mut()
+                .get_mut(&browse.selected_text().unwrap())
+            {
+                conf.draw_box_around_quote = f.value();
+            }
+            true
+        });
+
         // Minimum Width Limit
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
@@ -1225,6 +1259,7 @@ impl ConfigWindow {
         let mut tag2_position_ratio = self.tag2_position_ratio.clone();
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
+        let draw_box_around_quote = self.draw_box_around_quote.clone();
         let mut minimum_width_limit = self.minimum_width_limit.clone();
         let mut maximum_width_limit = self.maximum_width_limit.clone();
         let mut layer_rgb = self.translucent_layer_rgb.clone();
@@ -1253,13 +1288,23 @@ impl ConfigWindow {
             tag2_position_ratio.set_value(conf.tag2_position_ratio);
             image_ratio_width.set_value(conf.image_ratio.0);
             image_ratio_height.set_value(conf.image_ratio.1);
+            draw_box_around_quote.set_checked(conf.draw_box_around_quote);
             minimum_width_limit.set_value(conf.minimum_width_limit);
             maximum_width_limit.set_value(conf.maximum_width_limit);
             utils::set_color_btn_rgba(conf.color_layer, &mut layer_rgb);
             layer_rgb.redraw();
             layer_alpha.set_value(conf.color_layer[3] as f64);
-            png_format.set_value(true);
-            jpeg_format.set_value(false);
+            match conf.image_format {
+                ImageType::Png => {
+                    png_format.set_value(true);
+                    jpeg_format.set_value(false);
+                }
+                ImageType::Jpeg => {
+                    png_format.set_value(false);
+                    jpeg_format.set_value(true);
+                }
+                _ => {}
+            }
             configs
                 .borrow_mut()
                 .insert(browse.selected_text().unwrap(), conf);

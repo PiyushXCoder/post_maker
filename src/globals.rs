@@ -33,85 +33,19 @@ lazy_static! {
     pub(crate) static ref MAIN_SENDER: RwLock<Option<fltk::app::Sender<crate::AppMessage>>> = RwLock::new(None);
 
     /// TTF Font for Quote
-    pub(crate) static ref FONT_QUOTE: Font<'static> = {
-        let mut buffer = Vec::new();
-        if let Ok(mut file) = std::fs::File::open(rw_read!(CONFIG).quote_font.as_str()) {
-            if let Ok(_) = file.read_to_end(&mut buffer) {
-                if let Some(out) = rusttype::Font::try_from_vec(buffer) {
-                    return out;
-                }
-            }
-        }
-        rusttype::Font::try_from_vec(
-            include_bytes!("../assets/fonts/ReenieBeanie-Regular.ttf").to_vec(),
-        )
-        .unwrap()
-    };
+    pub(crate) static ref FONT_QUOTE: Font<'static> = load_font(rw_read!(CONFIG).quote_font.as_str());
 
     /// TTF Font for Subquote
-    pub(crate) static ref FONT_SUBQUOTE: Font<'static> = {
-        let mut buffer = Vec::new();
-        if let Ok(mut file) = std::fs::File::open(rw_read!(CONFIG).subquote_font.as_str())
-        {
-            if let Ok(_) = file.read_to_end(&mut buffer) {
-                if let Some(out) = rusttype::Font::try_from_vec(buffer) {
-                    return out;
-                }
-            }
-        }
-        rusttype::Font::try_from_vec(
-            include_bytes!("../assets/fonts/ReenieBeanie-Regular.ttf").to_vec(),
-        )
-        .unwrap()
-    };
+    pub(crate) static ref FONT_SUBQUOTE: Font<'static> = load_font(rw_read!(CONFIG).subquote_font.as_str());
 
     /// TTF Font for Subquote 2
-    pub(crate) static ref FONT_SUBQUOTE2: Font<'static> = {
-        let mut buffer = Vec::new();
-        if let Ok(mut file) =
-            std::fs::File::open(rw_read!(CONFIG).subquote2_font.as_str())
-        {
-            if let Ok(_) = file.read_to_end(&mut buffer) {
-                if let Some(out) = rusttype::Font::try_from_vec(buffer) {
-                    return out;
-                }
-            }
-        }
-        rusttype::Font::try_from_vec(
-            include_bytes!("../assets/fonts/Rajdhani-Regular.ttf").to_vec(),
-        )
-        .unwrap()
-    };
+    pub(crate) static ref FONT_SUBQUOTE2: Font<'static> = load_font(rw_read!(CONFIG).subquote2_font.as_str());
 
     /// TTF Font for Tag
-    pub(crate) static ref FONT_TAG: Font<'static> = {
-        let mut buffer = Vec::new();
-        if let Ok(mut file) = std::fs::File::open(&rw_read!(CONFIG).tag_font.as_str()) {
-            if let Ok(_) = file.read_to_end(&mut buffer) {
-                if let Some(out) = rusttype::Font::try_from_vec(buffer) {
-                    return out;
-                }
-            }
-        }
-        rusttype::Font::try_from_vec(include_bytes!("../assets/fonts/Kalam-Regular.ttf").to_vec())
-            .unwrap()
-    };
+    pub(crate) static ref FONT_TAG: Font<'static> = load_font(rw_read!(CONFIG).tag_font.as_str());
 
     /// TTF Font for Tag 2
-    pub(crate) static ref FONT_TAG2: Font<'static> = {
-        let mut buffer = Vec::new();
-        if let Ok(mut file) = std::fs::File::open(&rw_read!(CONFIG).tag2_font.as_str()) {
-            if let Ok(_) = file.read_to_end(&mut buffer) {
-                if let Some(out) = rusttype::Font::try_from_vec(buffer) {
-                    return out;
-                }
-            }
-        }
-        rusttype::Font::try_from_vec(
-            include_bytes!("../assets/fonts/Rajdhani-Regular.ttf").to_vec(),
-        )
-        .unwrap()
-    };
+    pub(crate) static ref FONT_TAG2: Font<'static> = load_font(rw_read!(CONFIG).tag2_font.as_str());
 
     /// Image to use for Window
     pub(crate) static ref ICON: OsString = include_str!("../assets/icon.svg").into();
@@ -127,4 +61,16 @@ lazy_static! {
         }
         img.into()
     };
+}
+
+fn load_font(path: &str) -> Font<'static> {
+    let mut buffer = Vec::new();
+    if let Ok(mut file) = std::fs::File::open(path) {
+        if let Ok(_) = file.read_to_end(&mut buffer) {
+            if let Some(out) = rusttype::Font::try_from_vec(buffer) {
+                return out;
+            }
+        }
+    }
+    rusttype::Font::try_from_vec(include_bytes!("../assets/OpenSans-Regular.ttf").to_vec()).unwrap()
 }
