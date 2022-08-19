@@ -4,8 +4,8 @@
     <img alt="actix-web-grants" src="./assets/icon_with_text.svg" width="170">
 </p>
 
-![Crates.io](https://img.shields.io/crates/v/post_maker?color=%23069060&style=for-the-badge)
-![Crates.io](https://img.shields.io/crates/l/post_maker?style=for-the-badge)
+[![Crates.io](https://img.shields.io/crates/v/post_maker?color=%23069060&style=for-the-badge)](https://crates.io/crates/post_maker)
+[![Crates.io](https://img.shields.io/crates/l/post_maker?style=for-the-badge)](https://spdx.org/licenses/GPL-3.0-only.html)
 
 > Post Maker helps you to make post for instagram and other social media apps easily and in massive amount. 
 
