@@ -709,7 +709,6 @@ pub(crate) fn draw_multiline_mid_string(
             original_height,
         );
 
-        let size = quote_from_height(height);
         draw_multiline_mid_string(
             tmp,
             font,
