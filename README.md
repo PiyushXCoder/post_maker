@@ -41,7 +41,7 @@ You can follow rust's official guide to install rust compiler and cargo [here](h
 
 ## General Overview of Controls
 
-![](assets/20220124_152902_screenshot.png)
+![](assets/Screenshot_2022-08-19_12-42-44.png)
 
 ## License
 

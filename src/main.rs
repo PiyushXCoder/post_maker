@@ -97,6 +97,7 @@ fn main() {
                     dialog::message_default(&msg);
                     std::process::exit(1);
                 }
+                // Fltk does not show dialogs from other thread in windows, So this is hack to get things done
                 AppMessage::DeleteImage => {
                     let ch = dialog::choice_default("Image is too small", "Delete", "Keep");
                     if ch == 0 {
