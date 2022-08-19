@@ -4,7 +4,7 @@
     <img alt="actix-web-grants" src="./assets/icon_with_text.svg" width="170">
 </p>
 
-> Post Maker helps you to make post for instagram and other social media apps easily.
+> Post Maker helps you to make post for instagram and other social media apps easily and in massive amount. 
 
 ## Installing
 
@@ -41,7 +41,7 @@ You can follow rust's official guide to install rust compiler and cargo [here](h
 
 ## General Overview of Controls
 
-![](assets/Screenshot_2022-08-19_12-42-44.png)
+![](assets/Screenshot_2022-08-19_13-48-49.png)
 
 ## License
 
