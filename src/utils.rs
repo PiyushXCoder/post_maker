@@ -666,6 +666,7 @@ pub(crate) fn draw_multiline_mid_string(
     let (mut box_width, mut box_height) = (0.0, 0.0);
 
     let (width, height): (f64, f64) = Coord::from(tmp.dimensions()).into();
+    let has_line_spacing = rw_read!(globals::CONFIG).line_spacing;
     for (index, line) in text.lines().enumerate() {
         let (text_width, text_height) =
             measure_line(font, line, rusttype::Scale::uniform(size as f32));
@@ -673,11 +674,16 @@ pub(crate) fn draw_multiline_mid_string(
         if text_width > box_width {
             box_width = text_width;
         }
-        box_height += text_height * 1.15;
+        box_height += text_height
+            * if index == 0 || !has_line_spacing {
+                1.0
+            } else {
+                1.12
+            };
 
         let (x, y) = (
             (width - text_width) / 2.0,
-            (position * height) / original_height + index as f64 * (text_height * 1.15),
+            (position * height) / original_height + index as f64 * (text_height * 1.12),
         );
 
         if !boxed || !rw_read!(globals::CONFIG).draw_box_around_quote {
@@ -733,7 +739,7 @@ fn draw_box(
     let (width, height): (f64, f64) = Coord::from(tmp.dimensions()).into();
     let (delta_x, delta_y) = (width / original_width, height / original_height);
 
-    let (x_gap, y_gap) = (8.0 * delta_x, 5.0 * delta_y);
+    let (x_gap, y_gap) = (30.0 * delta_x, 10.0 * delta_y);
     let (x, y) = (
         ((width - box_width) / 2.0 - x_gap) as u32,
         ((position * height) / original_height - y_gap) as u32,

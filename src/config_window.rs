@@ -66,6 +66,7 @@ pub(crate) struct ConfigWindow {
     pub(crate) image_ratio_width: ValueInput,
     pub(crate) image_ratio_height: ValueInput,
     pub(crate) draw_box_around_quote: CheckButton,
+    pub(crate) line_spacing: CheckButton,
     pub(crate) minimum_width_limit: ValueInput,
     pub(crate) maximum_width_limit: ValueInput,
     /// RGB value of top translucent layer
@@ -391,16 +392,18 @@ impl ConfigWindow {
         col.set_size(&image_ratio_grp, 30);
 
         // Draw box around Quote
-        let mut label = Frame::default().with_label("Draw Box:");
+        let mut label = Frame::default().with_label("Quote Special:");
         label.set_label_font(enums::Font::HelveticaBold);
         col.set_size(&label, 15);
 
-        let mut draw_box_around_quote_flex = Flex::default().row();
-        draw_box_around_quote_flex.set_size(&Frame::default(), 20);
+        let mut quote_special_flex = Flex::default().row();
+        quote_special_flex.set_size(&Frame::default(), 20);
         let mut draw_box_around_quote = CheckButton::default().with_label("Draw box around text");
         draw_box_around_quote.set_value(true);
-        draw_box_around_quote_flex.end();
-        col.set_size(&draw_box_around_quote_flex, 30);
+        let mut line_spacing = CheckButton::default().with_label("Line spacing in quotes");
+        line_spacing.set_value(true);
+        quote_special_flex.end();
+        col.set_size(&quote_special_flex, 30);
 
         let mut label = Frame::default().with_label("Image with limits:");
         label.set_label_font(enums::Font::HelveticaBold);
@@ -519,6 +522,7 @@ impl ConfigWindow {
             image_ratio_width,
             image_ratio_height,
             draw_box_around_quote,
+            line_spacing,
             minimum_width_limit,
             maximum_width_limit,
             translucent_layer_rgb,
@@ -577,6 +581,7 @@ impl ConfigWindow {
         self.image_ratio_height.set_value(config.image_ratio.1);
         self.draw_box_around_quote
             .set_checked(config.draw_box_around_quote);
+        self.line_spacing.set_checked(config.line_spacing);
         self.minimum_width_limit
             .set_value(config.minimum_width_limit);
         self.maximum_width_limit
@@ -628,6 +633,7 @@ impl ConfigWindow {
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
         let draw_box_around_quote = self.draw_box_around_quote.clone();
+        let line_spacing = self.line_spacing.clone();
         let mut minimum_width_limit = self.minimum_width_limit.clone();
         let mut maximum_width_limit = self.maximum_width_limit.clone();
         let mut layer_rgb = self.translucent_layer_rgb.clone();
@@ -675,6 +681,7 @@ impl ConfigWindow {
             image_ratio_width.set_value(conf.image_ratio.0);
             image_ratio_height.set_value(conf.image_ratio.1);
             draw_box_around_quote.set_checked(conf.draw_box_around_quote);
+            line_spacing.set_checked(conf.line_spacing);
             minimum_width_limit.set_value(conf.minimum_width_limit);
             maximum_width_limit.set_value(conf.maximum_width_limit);
             utils::set_color_btn_rgba(conf.color_layer, &mut layer_rgb);
@@ -706,6 +713,7 @@ impl ConfigWindow {
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
         let draw_box_around_quote = self.draw_box_around_quote.clone();
+        let line_spacing = self.line_spacing.clone();
         let mut minimum_width_limit = self.minimum_width_limit.clone();
         let mut maximum_width_limit = self.maximum_width_limit.clone();
         let mut layer_rgb = self.translucent_layer_rgb.clone();
@@ -752,6 +760,7 @@ impl ConfigWindow {
                 image_ratio_width.set_value(conf.image_ratio.0);
                 image_ratio_height.set_value(conf.image_ratio.1);
                 draw_box_around_quote.set_checked(conf.draw_box_around_quote);
+                line_spacing.set_checked(conf.line_spacing);
                 minimum_width_limit.set_value(conf.minimum_width_limit);
                 maximum_width_limit.set_value(conf.maximum_width_limit);
                 utils::set_color_btn_rgba(conf.color_layer, &mut layer_rgb);
@@ -780,6 +789,7 @@ impl ConfigWindow {
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
         let draw_box_around_quote = self.draw_box_around_quote.clone();
+        let line_spacing = self.line_spacing.clone();
         let mut minimum_width_limit = self.minimum_width_limit.clone();
         let mut maximum_width_limit = self.maximum_width_limit.clone();
         let mut layer_rgb = self.translucent_layer_rgb.clone();
@@ -816,6 +826,7 @@ impl ConfigWindow {
                 image_ratio_width.set_value(conf.image_ratio.0);
                 image_ratio_height.set_value(conf.image_ratio.1);
                 draw_box_around_quote.set_checked(conf.draw_box_around_quote);
+                line_spacing.set_checked(conf.line_spacing);
                 minimum_width_limit.set_value(conf.minimum_width_limit);
                 maximum_width_limit.set_value(conf.maximum_width_limit);
                 utils::set_color_btn_rgba(conf.color_layer, &mut layer_rgb);
@@ -1130,6 +1141,7 @@ impl ConfigWindow {
             true
         });
 
+        // Draw box around quote
         let browse = self.browse.clone();
         let configs = Rc::clone(&self.configs);
         self.draw_box_around_quote.handle(move |f, _| {
@@ -1138,6 +1150,19 @@ impl ConfigWindow {
                 .get_mut(&browse.selected_text().unwrap())
             {
                 conf.draw_box_around_quote = f.value();
+            }
+            true
+        });
+
+        // line spacing
+        let browse = self.browse.clone();
+        let configs = Rc::clone(&self.configs);
+        self.line_spacing.handle(move |f, _| {
+            if let Some(conf) = configs
+                .borrow_mut()
+                .get_mut(&browse.selected_text().unwrap())
+            {
+                conf.line_spacing = f.value();
             }
             true
         });
@@ -1260,6 +1285,7 @@ impl ConfigWindow {
         let mut image_ratio_width = self.image_ratio_width.clone();
         let mut image_ratio_height = self.image_ratio_height.clone();
         let draw_box_around_quote = self.draw_box_around_quote.clone();
+        let line_spacing = self.line_spacing.clone();
         let mut minimum_width_limit = self.minimum_width_limit.clone();
         let mut maximum_width_limit = self.maximum_width_limit.clone();
         let mut layer_rgb = self.translucent_layer_rgb.clone();
@@ -1289,6 +1315,7 @@ impl ConfigWindow {
             image_ratio_width.set_value(conf.image_ratio.0);
             image_ratio_height.set_value(conf.image_ratio.1);
             draw_box_around_quote.set_checked(conf.draw_box_around_quote);
+            line_spacing.set_checked(conf.line_spacing);
             minimum_width_limit.set_value(conf.minimum_width_limit);
             maximum_width_limit.set_value(conf.maximum_width_limit);
             utils::set_color_btn_rgba(conf.color_layer, &mut layer_rgb);

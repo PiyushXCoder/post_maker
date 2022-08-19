@@ -1,6 +1,6 @@
 [package]
 name = "post_maker"
-version = "0.6.0-alpha.1"
+version = "0.6.0-alpha.2"
 edition = "2021"
 description = "Post Maker helps you to make post for Instagram and other Social Media apps easily."
 authors = ["PiyushXCoder <https://piyushxcoder.in>"]
