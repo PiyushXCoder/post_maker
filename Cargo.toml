@@ -19,7 +19,7 @@ opt-level = 3
 [dependencies]
 clap = { version = "3.0", features = ["derive"] }
 log = "0.4"
-simplelog = "0.11"
+simplelog = "0.12"
 fltk = "1.2"
 fltk-theme = "0.4"
 image = "0.24.1"
