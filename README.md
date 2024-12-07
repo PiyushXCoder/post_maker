@@ -46,6 +46,9 @@ You can follow rust's official guide to install rust compiler and cargo [here](h
 
 ![](assets/Screenshot_2022-08-19_13-48-49.png)
 
+## Achievement
+The Post Maker is listed in [Official Project Showcase of fltk-rs](https://github.com/fltk-rs/fltk-rs/issues/418)
+
 ## License
 
 This project is under [GPLv3](LICENSE)
